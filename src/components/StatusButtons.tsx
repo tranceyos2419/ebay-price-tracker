@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Trash2 } from "lucide-react"; // Import Lucide icons
-
+import { CheckCircle2 } from "lucide-react";
 interface StatusButtonsProps {
   hasChanges: boolean;
   onDelete: () => void;
@@ -19,20 +18,20 @@ export const StatusButtons = ({
           variant="ghost"
           size="sm"
           onClick={onUpdate}
-          className="text-green-600 hover:text-green-800"
+          className="text-green-600 hover:text-green-800 h-10 w-10  cursor-pointer hover:bg-gray-200"
           title="Data edited - click to update"
         >
-          <CheckCircle2 className="h-4 w-4" /> {/* Lucide check icon */}
+          ✔️
         </Button>
       ) : (
         <Button
           variant="ghost"
           size="sm"
           onClick={onDelete}
-          className="text-red-600 hover:text-red-800"
+          className="text-red-600 hover:text-red-800 h-10 w-10  cursor-pointer hover:bg-gray-200"
           title="All good - click to delete"
         >
-          <Trash2 className="h-4 w-4" /> {/* Lucide trash icon */}
+          ❌
         </Button>
       )}
     </div>

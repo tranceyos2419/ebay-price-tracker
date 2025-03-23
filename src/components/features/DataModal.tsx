@@ -104,7 +104,9 @@ const DataModal = ({ onSubmit }: DataModalProps) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-blue-500 hover:bg-blue-600">ADD</Button>
+        <Button className="bg-blue-500 hover:bg-blue-600 cursor-pointer">
+          ADD
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
