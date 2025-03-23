@@ -185,12 +185,12 @@ const tableData: TableViewProps = {
 };
 
 export default function DashboardPage() {
-  const [data, setData] = useState(tableData);
+  const [data, setData] = useState<TableViewProps["data"]>(tableData.data);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(2);
 
-  const totalPages = Math.ceil(data.data.length / itemsPerPage);
-  const paginatedData = data.data.slice(
+  const totalPages = Math.ceil(data.length / itemsPerPage);
+  const paginatedData = data.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage,
   );
@@ -242,6 +242,7 @@ export default function DashboardPage() {
       },
     };
 
+    // Update the state with the new row
     setData((prevData) => [...prevData, newRow]);
   };
   return (
