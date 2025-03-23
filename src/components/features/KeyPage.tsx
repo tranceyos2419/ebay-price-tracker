@@ -68,19 +68,26 @@ const KeyPageCard = ({
       </div>
 
       <div className="flex-1 p-2">
-        <div className="flex items-start gap-1">
-          <input
-            type="text"
-            value={editablePrice}
-            onChange={(e) => setEditablePrice(e.target.value)}
-            className="text-sm font-semibold text-gray-600 border border-gray-300 rounded-md p-1 w-15"
-          />
-          <input
-            type="text"
-            value={editableBestOffer}
-            onChange={(e) => setEditableBestOffer(e.target.value)}
-            className="text-sm font-semibold text-gray-600 border border-gray-300 rounded-md p-1 w-15"
-          />
+        <div className="flex items-start gap-2">
+          <div className="flex items-center gap-1">
+            <span className="font-bold text-center">$</span>
+            <input
+              type="text"
+              value={editablePrice}
+              onChange={(e) => setEditablePrice(e.target.value)}
+              className="text-sm font-semibold text-gray-600 border border-gray-300 rounded-md p-1 w-20"
+            />
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="font-bold text-center">$</span>
+            <input
+              type="text"
+              value={editableBestOffer}
+              onChange={(e) => setEditableBestOffer(e.target.value)}
+              className="text-sm font-semibold text-gray-600 border border-gray-300 rounded-md p-1 w-20"
+            />
+          </div>
+
           <input
             type="text"
             value={editableItemId}
@@ -88,7 +95,7 @@ const KeyPageCard = ({
             className="text-sm font-semibold text-gray-600 border border-gray-300 rounded-md  p-1 w-40"
           />
         </div>
-        <p className="text-xs font-semibold text-gray-500 mt-1 truncate">
+        <p className="text-sm font-bold text-gray-500 mt-5  truncate">
           {title}
         </p>
       </div>

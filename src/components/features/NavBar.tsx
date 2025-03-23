@@ -14,7 +14,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useTheme } from "next-themes";
-import { Moon, Sun, LogOut } from "lucide-react";
+import { Moon, Sun, LogOut, Home } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { TableViewProps } from "./TableView"; // Import TableViewProps
 
 function UserNav() {
   const { theme, setTheme } = useTheme();
@@ -67,11 +69,17 @@ function UserNav() {
   );
 }
 
-const NavBar = ({ onAdd }: { onAdd: (data: any) => void }) => {
+const NavBar = ({
+  onAddSuccess,
+}: {
+  onAddSuccess?: (newRow: TableViewProps["initialData"][0]) => void;
+}) => {
+  const router = useRouter();
+
   return (
     <div className="flex justify-between items-center mb-4">
       <div className="flex space-x-2">
-        <DataModal onSubmit={onAdd} />
+        <DataModal onAddSuccess={onAddSuccess} />
         <Button className="bg-orange-500 hover:bg-orange-600 cursor-pointer">
           UPDATE
         </Button>
@@ -80,8 +88,15 @@ const NavBar = ({ onAdd }: { onAdd: (data: any) => void }) => {
         </Button>
       </div>
 
-      {/* Right side: UserNav */}
-      <div className="flex items-center">
+      <div className="flex items-center gap-8">
+        <Button
+          variant="ghost"
+          onClick={() => router.push("/")}
+          className="flex items-center space-x-2 cursor-pointer"
+        >
+          <Home className="h-4 w-4" />
+          <span>Home</span>
+        </Button>
         <UserNav />
       </div>
     </div>

@@ -6,3 +6,7 @@ dpush:
 	@pnpx prisma db push
 build:
 	@pnpm run build
+seed:
+	@pnpm run seed
+studio:
+	@pnpx prisma studio

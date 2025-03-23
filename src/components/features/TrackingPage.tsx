@@ -7,7 +7,7 @@ interface TrackingPageCardProps {
   ebay_item_id: string;
   price: number;
   image_url: string;
-  title: string;
+  store_name: string;
   status: string;
   message?: string;
 }
@@ -16,7 +16,7 @@ const TrackingPageCard = ({
   ebay_item_id,
   price,
   image_url,
-  title,
+  store_name,
   message,
 }: TrackingPageCardProps) => {
   const [editablePrice, setEditablePrice] = useState(price.toFixed(2));
@@ -45,7 +45,7 @@ const TrackingPageCard = ({
       <div className="flex-shrink-0 border border-gray-300 rounded-md p-1 h-[120px]">
         <Image
           src={image_url}
-          alt={title}
+          alt={store_name || "Tracking product image"}
           width={100}
           height={100}
           className="object-cover rounded-md h-full"
@@ -53,13 +53,16 @@ const TrackingPageCard = ({
       </div>
 
       <div className="flex-1 mx-2 p-2">
-        <div className="flex items-start gap-1">
-          <input
-            type="text"
-            value={editablePrice}
-            onChange={(e) => setEditablePrice(e.target.value)}
-            className="text-sm font-semibold text-gray-600 border border-gray-300 rounded-md p-1 w-15"
-          />
+        <div className="flex items-start gap-2">
+          <div className="flex items-center gap-1">
+            <span className="font-bold text-center">$</span>
+            <input
+              type="text"
+              value={editablePrice}
+              onChange={(e) => setEditablePrice(e.target.value)}
+              className="text-sm font-semibold text-gray-600 border border-gray-300 rounded-md p-1 w-20"
+            />
+          </div>
           <input
             type="text"
             value={editableItemId}
@@ -68,7 +71,7 @@ const TrackingPageCard = ({
           />
         </div>
         {message && (
-          <p className="text-xs font-semibold text-gray-500 mt-1 truncate">
+          <p className="text-sm font-bold text-gray-500 mt-5 truncate">
             {message}
           </p>
         )}

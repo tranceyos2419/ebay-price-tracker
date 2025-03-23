@@ -11,6 +11,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import toast from "react-hot-toast";
+import { onAddRecord } from "@/actions/dashoard";
+import { TableViewProps } from "./TableView";
 
 interface FormData {
   key_page: string;
@@ -25,13 +27,16 @@ interface FormErrors {
   key_page?: string;
   minimum_best_offer?: string;
   price?: string;
+  page_01?: string;
+  page_02?: string;
+  page_03?: string;
 }
 
 interface DataModalProps {
-  onSubmit: (data: FormData) => void;
+  onAddSuccess?: (newRow: TableViewProps["initialData"][0]) => void;
 }
 
-const DataModal = ({ onSubmit }: DataModalProps) => {
+const DataModal = ({ onAddSuccess }: DataModalProps) => {
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     key_page: "",
@@ -43,25 +48,69 @@ const DataModal = ({ onSubmit }: DataModalProps) => {
   });
   const [errors, setErrors] = useState<FormErrors>({});
 
+  const validateItemId = (
+    id: string,
+    fieldName: string,
+  ): string | undefined => {
+    if (id && (id.length !== 12 || !/^\d+$/.test(id))) {
+      return `${fieldName} must be a 12-digit number`;
+    }
+    return undefined;
+  };
+
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
     if (!formData.key_page.trim()) {
-      newErrors.key_page = "Key Page is required";
-      toast.error("Key Page is required");
+      newErrors.key_page = "Key Page item id is required";
+      toast.error("Key Page item id is required");
+    } else {
+      const keyPageError = validateItemId(
+        formData.key_page,
+        "Key Page item id",
+      );
+      if (keyPageError) {
+        newErrors.key_page = keyPageError;
+        toast.error(keyPageError);
+      }
+    }
+
+    if (formData.page_01) {
+      const page01Error = validateItemId(formData.page_01, "Page 01");
+      if (page01Error) {
+        newErrors.page_01 = page01Error;
+        toast.error(page01Error);
+      }
+    }
+
+    if (formData.page_02) {
+      const page02Error = validateItemId(formData.page_02, "Page 02");
+      if (page02Error) {
+        newErrors.page_02 = page02Error;
+        toast.error(page02Error);
+      }
+    }
+
+    if (formData.page_03) {
+      const page03Error = validateItemId(formData.page_03, "Page 03");
+      if (page03Error) {
+        newErrors.page_03 = page03Error;
+        toast.error(page03Error);
+      }
     }
 
     if (
-      formData.minimum_best_offer !== undefined &&
-      (isNaN(formData.minimum_best_offer) || formData.minimum_best_offer < 0)
+      (formData.minimum_best_offer !== undefined &&
+        isNaN(formData.minimum_best_offer)) ||
+      formData.minimum_best_offer! < 0
     ) {
       newErrors.minimum_best_offer = "Must be a valid positive number";
       toast.error("Minimum Best Offer must be a valid positive number");
     }
 
     if (
-      formData.price !== undefined &&
-      (isNaN(formData.price) || formData.price < 0)
+      (formData.price !== undefined && isNaN(formData.price)) ||
+      formData.price! < 0
     ) {
       newErrors.price = "Must be a valid positive number";
       toast.error("Price must be a valid positive number");
@@ -71,7 +120,7 @@ const DataModal = ({ onSubmit }: DataModalProps) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validateForm()) {
       return;
     }
@@ -87,18 +136,26 @@ const DataModal = ({ onSubmit }: DataModalProps) => {
       ...(formData.page_03 && { page_03: formData.page_03 }),
     };
 
-    onSubmit(submitData);
-    setOpen(false);
-    setFormData({
-      key_page: "",
-      minimum_best_offer: undefined,
-      price: undefined,
-      page_01: "",
-      page_02: "",
-      page_03: "",
-    });
-    setErrors({});
-    toast.success("Record added successfully");
+    const result = await onAddRecord(submitData);
+
+    if (result.success && result.newRow) {
+      if (onAddSuccess) {
+        onAddSuccess(result.newRow);
+      }
+      setOpen(false);
+      setFormData({
+        key_page: "",
+        minimum_best_offer: undefined,
+        price: undefined,
+        page_01: "",
+        page_02: "",
+        page_03: "",
+      });
+      setErrors({});
+      toast.success("Record added successfully");
+    } else {
+      toast.error(result.message || "Failed to add record");
+    }
   };
 
   return (
@@ -188,6 +245,9 @@ const DataModal = ({ onSubmit }: DataModalProps) => {
               placeholder="Ex: 386204322434"
               className="mt-2"
             />
+            {errors.page_01 && (
+              <p className="mt-1 text-sm text-red-500">{errors.page_01}</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium">Page 02</label>
@@ -199,6 +259,9 @@ const DataModal = ({ onSubmit }: DataModalProps) => {
               placeholder="Ex: 386203231330"
               className="mt-2"
             />
+            {errors.page_02 && (
+              <p className="mt-1 text-sm text-red-500">{errors.page_02}</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium">Page 03</label>
@@ -210,6 +273,9 @@ const DataModal = ({ onSubmit }: DataModalProps) => {
               placeholder="Ex: 342304322423"
               className="mt-2"
             />
+            {errors.page_03 && (
+              <p className="mt-1 text-sm text-red-500">{errors.page_03}</p>
+            )}
           </div>
           <Button
             variant="primary"

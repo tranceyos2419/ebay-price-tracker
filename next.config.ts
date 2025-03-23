@@ -4,14 +4,14 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "unsplash.com",
+        hostname: "images.unsplash.com",
         port: "",
         pathname: "/**",
       },
     ],
   },
   eslint: {
-    ignoreDuringBuilds: true, // Disables ESLint linting during builds
+    ignoreDuringBuilds: true,
   },
 };
 

@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { CheckCircle2 } from "lucide-react";
 interface StatusButtonsProps {
   hasChanges: boolean;
   onDelete: () => void;
