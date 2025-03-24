@@ -3,19 +3,19 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 model Item {
   item_id     Int     @id @default(autoincrement())
   key_page_id Int
-  KeyPage     KeyPage @relation(fields: [key_page_id], references: [key_page_id])
+  KeyPage     KeyPage @relation(fields: [key_page_id], references: [key_page_id], onDelete: Cascade)
 }
 
 model KeyPage {
   key_page_id        Int            @id @default(autoincrement())
-  ebay_item_id       String
+  ebay_item_id       String         @unique
   price              Float
   minimum_best_offer Float
   image_url          String
@@ -29,7 +29,7 @@ model KeyPage {
 
 model TrackingPage {
   tracking_page_id  Int      @id @default(autoincrement())
-  ebay_item_id      String
+  ebay_item_id      String   @unique
   price             Float
   image_url         String
   store_name        String
@@ -37,5 +37,5 @@ model TrackingPage {
   message           String
   last_updated_date DateTime
   key_page_id       Int
-  KeyPage           KeyPage  @relation(fields: [key_page_id], references: [key_page_id])
+  KeyPage           KeyPage  @relation(fields: [key_page_id], references: [key_page_id], onDelete: Cascade)
 }

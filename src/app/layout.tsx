@@ -31,7 +31,7 @@ export default function RootLayout({
       >
         <ThemeProvider>
           {children}
-          <Toaster position="top-center" toastOptions={{ duration: 8000 }} />
+          <Toaster position="top-center" toastOptions={{ duration: 5000 }} />
         </ThemeProvider>
       </body>
     </html>

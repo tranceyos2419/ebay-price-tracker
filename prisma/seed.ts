@@ -2,11 +2,24 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+function generateUniqueEbayIds(count: number): string[] {
+  const ids = new Set<string>();
+  while (ids.size < count) {
+    const id = Math.floor(
+      100000000000 + Math.random() * 900000000000,
+    ).toString();
+    ids.add(id);
+  }
+  return Array.from(ids);
+}
+
 async function main() {
+  const ebayItemIds = generateUniqueEbayIds(41);
+
   await prisma.keyPage.createMany({
     data: [
       {
-        ebay_item_id: "386719525691",
+        ebay_item_id: ebayItemIds[0],
         price: 309.99,
         minimum_best_offer: 288.99,
         image_url:
@@ -17,7 +30,7 @@ async function main() {
         last_updated_date: new Date(),
       },
       {
-        ebay_item_id: "297081609809",
+        ebay_item_id: ebayItemIds[1],
         price: 0.38,
         minimum_best_offer: 0.3,
         image_url:
@@ -28,7 +41,7 @@ async function main() {
         last_updated_date: new Date(),
       },
       {
-        ebay_item_id: "355331298628",
+        ebay_item_id: ebayItemIds[2],
         price: 310.39,
         minimum_best_offer: 300.0,
         image_url:
@@ -39,7 +52,7 @@ async function main() {
         last_updated_date: new Date(),
       },
       {
-        ebay_item_id: "123456789012",
+        ebay_item_id: ebayItemIds[3],
         price: 150.0,
         minimum_best_offer: 140.0,
         image_url:
@@ -50,7 +63,7 @@ async function main() {
         last_updated_date: new Date(),
       },
       {
-        ebay_item_id: "234567890123",
+        ebay_item_id: ebayItemIds[4],
         price: 75.5,
         minimum_best_offer: 70.0,
         image_url:
@@ -61,7 +74,7 @@ async function main() {
         last_updated_date: new Date(),
       },
       {
-        ebay_item_id: "345678901234",
+        ebay_item_id: ebayItemIds[5],
         price: 200.0,
         minimum_best_offer: 180.0,
         image_url:
@@ -72,7 +85,7 @@ async function main() {
         last_updated_date: new Date(),
       },
       {
-        ebay_item_id: "456789012345",
+        ebay_item_id: ebayItemIds[6],
         price: 50.0,
         minimum_best_offer: 45.0,
         image_url:
@@ -83,7 +96,7 @@ async function main() {
         last_updated_date: new Date(),
       },
       {
-        ebay_item_id: "567890123456",
+        ebay_item_id: ebayItemIds[7],
         price: 120.0,
         minimum_best_offer: 110.0,
         image_url:
@@ -94,7 +107,7 @@ async function main() {
         last_updated_date: new Date(),
       },
       {
-        ebay_item_id: "678901234567",
+        ebay_item_id: ebayItemIds[8],
         price: 90.0,
         minimum_best_offer: 85.0,
         image_url:
@@ -105,7 +118,7 @@ async function main() {
         last_updated_date: new Date(),
       },
       {
-        ebay_item_id: "789012345678",
+        ebay_item_id: ebayItemIds[9],
         price: 300.0,
         minimum_best_offer: 280.0,
         image_url:
@@ -116,7 +129,7 @@ async function main() {
         last_updated_date: new Date(),
       },
       {
-        ebay_item_id: "890123456789",
+        ebay_item_id: ebayItemIds[10],
         price: 25.0,
         minimum_best_offer: 20.0,
         image_url:
@@ -127,7 +140,7 @@ async function main() {
         last_updated_date: new Date(),
       },
       {
-        ebay_item_id: "901234567890",
+        ebay_item_id: ebayItemIds[11],
         price: 500.0,
         minimum_best_offer: 480.0,
         image_url:
@@ -138,7 +151,7 @@ async function main() {
         last_updated_date: new Date(),
       },
       {
-        ebay_item_id: "112233445566",
+        ebay_item_id: ebayItemIds[12],
         price: 60.0,
         minimum_best_offer: 55.0,
         image_url:
@@ -149,7 +162,7 @@ async function main() {
         last_updated_date: new Date(),
       },
       {
-        ebay_item_id: "223344556677",
+        ebay_item_id: ebayItemIds[13],
         price: 800.0,
         minimum_best_offer: 750.0,
         image_url:
@@ -160,7 +173,7 @@ async function main() {
         last_updated_date: new Date(),
       },
       {
-        ebay_item_id: "334455667788",
+        ebay_item_id: ebayItemIds[14],
         price: 40.0,
         minimum_best_offer: 35.0,
         image_url:
@@ -171,7 +184,7 @@ async function main() {
         last_updated_date: new Date(),
       },
       {
-        ebay_item_id: "445566778899",
+        ebay_item_id: ebayItemIds[15],
         price: 1500.0,
         minimum_best_offer: 1400.0,
         image_url:
@@ -182,7 +195,7 @@ async function main() {
         last_updated_date: new Date(),
       },
       {
-        ebay_item_id: "556677889900",
+        ebay_item_id: ebayItemIds[16],
         price: 10.0,
         minimum_best_offer: 8.0,
         image_url:
@@ -193,7 +206,7 @@ async function main() {
         last_updated_date: new Date(),
       },
       {
-        ebay_item_id: "667788990011",
+        ebay_item_id: ebayItemIds[17],
         price: 700.0,
         minimum_best_offer: 650.0,
         image_url:
@@ -204,7 +217,7 @@ async function main() {
         last_updated_date: new Date(),
       },
       {
-        ebay_item_id: "778899001122",
+        ebay_item_id: ebayItemIds[18],
         price: 100.0,
         minimum_best_offer: 90.0,
         image_url:
@@ -215,7 +228,7 @@ async function main() {
         last_updated_date: new Date(),
       },
       {
-        ebay_item_id: "889900112233",
+        ebay_item_id: ebayItemIds[19],
         price: 250.0,
         minimum_best_offer: 230.0,
         image_url:
@@ -228,18 +241,16 @@ async function main() {
     ],
   });
 
-  // Insert 20 mock entries into the Item table
   await prisma.item.createMany({
     data: Array.from({ length: 20 }, (_, i) => ({
-      key_page_id: i + 1, // key_page_id from 1 to 20
+      key_page_id: i + 1,
     })),
   });
 
-  // Insert 20 mock entries into the TrackingPage table
   await prisma.trackingPage.createMany({
     data: [
       {
-        ebay_item_id: "386719525691",
+        ebay_item_id: ebayItemIds[20],
         price: 138.98,
         image_url:
           "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=1471&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
@@ -250,7 +261,7 @@ async function main() {
         key_page_id: 1,
       },
       {
-        ebay_item_id: "386719525691",
+        ebay_item_id: ebayItemIds[21],
         price: 149.0,
         image_url:
           "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=1471&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
@@ -261,7 +272,7 @@ async function main() {
         key_page_id: 1,
       },
       {
-        ebay_item_id: "297081609809",
+        ebay_item_id: ebayItemIds[22],
         price: 0.38,
         image_url:
           "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=1471&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
@@ -272,7 +283,7 @@ async function main() {
         key_page_id: 2,
       },
       {
-        ebay_item_id: "355331298628",
+        ebay_item_id: ebayItemIds[23],
         price: 310.39,
         image_url:
           "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=1471&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
@@ -283,7 +294,7 @@ async function main() {
         key_page_id: 3,
       },
       {
-        ebay_item_id: "123456789012",
+        ebay_item_id: ebayItemIds[24],
         price: 140.0,
         image_url:
           "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=1471&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
@@ -294,7 +305,7 @@ async function main() {
         key_page_id: 4,
       },
       {
-        ebay_item_id: "234567890123",
+        ebay_item_id: ebayItemIds[25],
         price: 70.0,
         image_url:
           "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=1471&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
@@ -305,7 +316,7 @@ async function main() {
         key_page_id: 5,
       },
       {
-        ebay_item_id: "345678901234",
+        ebay_item_id: ebayItemIds[26],
         price: 180.0,
         image_url:
           "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=1471&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
@@ -316,7 +327,7 @@ async function main() {
         key_page_id: 6,
       },
       {
-        ebay_item_id: "456789012345",
+        ebay_item_id: ebayItemIds[27],
         price: 45.0,
         image_url:
           "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=1471&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
@@ -327,7 +338,7 @@ async function main() {
         key_page_id: 7,
       },
       {
-        ebay_item_id: "567890123456",
+        ebay_item_id: ebayItemIds[28],
         price: 110.0,
         image_url:
           "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=1471&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
@@ -338,7 +349,7 @@ async function main() {
         key_page_id: 8,
       },
       {
-        ebay_item_id: "678901234567",
+        ebay_item_id: ebayItemIds[29],
         price: 85.0,
         image_url:
           "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=1471&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
@@ -349,7 +360,7 @@ async function main() {
         key_page_id: 9,
       },
       {
-        ebay_item_id: "789012345678",
+        ebay_item_id: ebayItemIds[30],
         price: 280.0,
         image_url:
           "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=1471&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
@@ -360,7 +371,7 @@ async function main() {
         key_page_id: 10,
       },
       {
-        ebay_item_id: "890123456789",
+        ebay_item_id: ebayItemIds[31],
         price: 20.0,
         image_url:
           "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=1471&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
@@ -371,7 +382,7 @@ async function main() {
         key_page_id: 11,
       },
       {
-        ebay_item_id: "901234567890",
+        ebay_item_id: ebayItemIds[32],
         price: 480.0,
         image_url:
           "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=1471&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
@@ -382,7 +393,7 @@ async function main() {
         key_page_id: 12,
       },
       {
-        ebay_item_id: "112233445566",
+        ebay_item_id: ebayItemIds[33],
         price: 55.0,
         image_url:
           "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=1471&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
@@ -393,7 +404,7 @@ async function main() {
         key_page_id: 13,
       },
       {
-        ebay_item_id: "223344556677",
+        ebay_item_id: ebayItemIds[34],
         price: 750.0,
         image_url:
           "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=1471&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
@@ -404,7 +415,7 @@ async function main() {
         key_page_id: 14,
       },
       {
-        ebay_item_id: "334455667788",
+        ebay_item_id: ebayItemIds[35],
         price: 35.0,
         image_url:
           "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=1471&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
@@ -415,7 +426,7 @@ async function main() {
         key_page_id: 15,
       },
       {
-        ebay_item_id: "445566778899",
+        ebay_item_id: ebayItemIds[36],
         price: 1400.0,
         image_url:
           "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=1471&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
@@ -426,7 +437,7 @@ async function main() {
         key_page_id: 16,
       },
       {
-        ebay_item_id: "556677889900",
+        ebay_item_id: ebayItemIds[37],
         price: 8.0,
         image_url:
           "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=1471&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
@@ -437,7 +448,7 @@ async function main() {
         key_page_id: 17,
       },
       {
-        ebay_item_id: "667788990011",
+        ebay_item_id: ebayItemIds[38],
         price: 650.0,
         image_url:
           "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=1471&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
@@ -448,7 +459,7 @@ async function main() {
         key_page_id: 18,
       },
       {
-        ebay_item_id: "778899001122",
+        ebay_item_id: ebayItemIds[39],
         price: 90.0,
         image_url:
           "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=1471&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
@@ -459,7 +470,7 @@ async function main() {
         key_page_id: 19,
       },
       {
-        ebay_item_id: "889900112233",
+        ebay_item_id: ebayItemIds[40],
         price: 230.0,
         image_url:
           "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=1471&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",

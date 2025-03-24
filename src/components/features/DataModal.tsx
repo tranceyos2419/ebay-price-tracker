@@ -69,51 +69,51 @@ const DataModal = ({ onAddSuccess }: DataModalProps) => {
         formData.key_page,
         "Key Page item id",
       );
-      if (keyPageError) {
-        newErrors.key_page = keyPageError;
-        toast.error(keyPageError);
-      }
+      if (keyPageError) newErrors.key_page = keyPageError;
     }
 
     if (formData.page_01) {
       const page01Error = validateItemId(formData.page_01, "Page 01");
-      if (page01Error) {
-        newErrors.page_01 = page01Error;
-        toast.error(page01Error);
-      }
+      if (page01Error) newErrors.page_01 = page01Error;
     }
 
     if (formData.page_02) {
       const page02Error = validateItemId(formData.page_02, "Page 02");
-      if (page02Error) {
-        newErrors.page_02 = page02Error;
-        toast.error(page02Error);
-      }
+      if (page02Error) newErrors.page_02 = page02Error;
     }
 
     if (formData.page_03) {
       const page03Error = validateItemId(formData.page_03, "Page 03");
-      if (page03Error) {
-        newErrors.page_03 = page03Error;
-        toast.error(page03Error);
-      }
+      if (page03Error) newErrors.page_03 = page03Error;
     }
 
     if (
-      (formData.minimum_best_offer !== undefined &&
-        isNaN(formData.minimum_best_offer)) ||
-      formData.minimum_best_offer! < 0
+      formData.minimum_best_offer !== undefined &&
+      (isNaN(formData.minimum_best_offer) || formData.minimum_best_offer < 0)
     ) {
       newErrors.minimum_best_offer = "Must be a valid positive number";
       toast.error("Minimum Best Offer must be a valid positive number");
     }
 
     if (
-      (formData.price !== undefined && isNaN(formData.price)) ||
-      formData.price! < 0
+      formData.price !== undefined &&
+      (isNaN(formData.price) || formData.price < 0)
     ) {
       newErrors.price = "Must be a valid positive number";
       toast.error("Price must be a valid positive number");
+    }
+
+    // Check for duplicate ebay_item_ids within the form
+    const ids = [
+      formData.key_page,
+      formData.page_01,
+      formData.page_02,
+      formData.page_03,
+    ].filter(Boolean);
+    const uniqueIds = new Set(ids);
+    if (uniqueIds.size !== ids.length) {
+      newErrors.key_page = "eBay item IDs must be unique across all fields";
+      toast.error("eBay item IDs must be unique across all fields");
     }
 
     setErrors(newErrors);
@@ -121,9 +121,7 @@ const DataModal = ({ onAddSuccess }: DataModalProps) => {
   };
 
   const handleSubmit = async () => {
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     const submitData: FormData = {
       key_page: formData.key_page,
@@ -139,9 +137,7 @@ const DataModal = ({ onAddSuccess }: DataModalProps) => {
     const result = await onAddRecord(submitData);
 
     if (result.success && result.newRow) {
-      if (onAddSuccess) {
-        onAddSuccess(result.newRow);
-      }
+      if (onAddSuccess) onAddSuccess(result.newRow);
       setOpen(false);
       setFormData({
         key_page: "",

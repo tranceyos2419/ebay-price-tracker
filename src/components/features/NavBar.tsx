@@ -16,7 +16,7 @@ import {
 import { useTheme } from "next-themes";
 import { Moon, Sun, LogOut, Home } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { TableViewProps } from "./TableView"; // Import TableViewProps
+import { TableViewProps } from "./TableView";
 
 function UserNav() {
   const { theme, setTheme } = useTheme();
@@ -80,10 +80,10 @@ const NavBar = ({
     <div className="flex justify-between items-center mb-4">
       <div className="flex space-x-2">
         <DataModal onAddSuccess={onAddSuccess} />
-        <Button className="bg-orange-500 hover:bg-orange-600 cursor-pointer">
+        <Button className="bg-orange-600 hover:bg-orange-700 cursor-pointer">
           UPDATE
         </Button>
-        <Button className="bg-red-500 hover:bg-red-600 cursor-pointer">
+        <Button className="bg-red-600 hover:bg-red-700 cursor-pointer">
           DELETE
         </Button>
       </div>

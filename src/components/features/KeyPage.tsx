@@ -1,7 +1,10 @@
 "use client";
+
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { StatusButtons } from "@/components/StatusButtons";
+import toast from "react-hot-toast";
+import { onUpdateKeyPage, onDeleteKeyPage } from "@/actions/dashoard";
 
 interface KeyPageCardProps {
   ebay_item_id: string;
@@ -11,6 +14,12 @@ interface KeyPageCardProps {
   title: string;
   status: string;
   message?: string;
+  last_updated_date: string;
+  onUpdate: (
+    originalEbayId: string,
+    data: { ebay_item_id: string; price: number; minimum_best_offer: number },
+  ) => void;
+  onDelete: () => void;
 }
 
 const KeyPageCard = ({
@@ -19,14 +28,22 @@ const KeyPageCard = ({
   minimum_best_offer,
   image_url,
   title,
+  onUpdate,
+  onDelete,
 }: KeyPageCardProps) => {
   const [editablePrice, setEditablePrice] = useState(price.toFixed(2));
   const [editableBestOffer, setEditableBestOffer] = useState(
     minimum_best_offer.toFixed(2),
   );
   const [editableItemId, setEditableItemId] = useState(ebay_item_id);
-  const [isDeleted, setIsDeleted] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+
+  useEffect(() => {
+    setEditablePrice(price.toFixed(2));
+    setEditableBestOffer(minimum_best_offer.toFixed(2));
+    setEditableItemId(ebay_item_id);
+    setHasChanges(false);
+  }, [price, minimum_best_offer, ebay_item_id]);
 
   useEffect(() => {
     const changed =
@@ -43,17 +60,57 @@ const KeyPageCard = ({
     ebay_item_id,
   ]);
 
-  const handleDelete = () => setIsDeleted(true);
-  const handleUpdate = () => {
-    console.log("Updating data:", {
-      ebay_item_id: editableItemId,
-      price: editablePrice,
-      minimum_best_offer: editableBestOffer,
-    });
-    setHasChanges(false);
+  const validate = (): boolean => {
+    if (
+      !editableItemId ||
+      editableItemId.length !== 12 ||
+      !/^\d+$/.test(editableItemId)
+    ) {
+      toast.error("Key Page item ID must be a 12-digit number");
+      return false;
+    }
+    if (isNaN(parseFloat(editablePrice)) || parseFloat(editablePrice) < 0) {
+      toast.error("Price must be a valid positive number");
+      return false;
+    }
+    if (
+      isNaN(parseFloat(editableBestOffer)) ||
+      parseFloat(editableBestOffer) < 0
+    ) {
+      toast.error("Minimum Best Offer must be a valid positive number");
+      return false;
+    }
+    return true;
   };
 
-  if (isDeleted) return null;
+  const handleUpdate = async () => {
+    if (!validate()) return;
+
+    const updatedData = {
+      ebay_item_id: editableItemId,
+      price: parseFloat(editablePrice),
+      minimum_best_offer: parseFloat(editableBestOffer),
+    };
+
+    const result = await onUpdateKeyPage(ebay_item_id, updatedData);
+    if (result.success) {
+      onUpdate(ebay_item_id, updatedData);
+      toast.success(result.message);
+      setHasChanges(false);
+    } else {
+      toast.error(result.message);
+    }
+  };
+
+  const handleDelete = async () => {
+    const result = await onDeleteKeyPage(ebay_item_id);
+    if (result.success) {
+      onDelete();
+      toast.success(result.message);
+    } else {
+      toast.error(result.message);
+    }
+  };
 
   return (
     <div className="flex items-start justify-between p-2 bg-gray-100 rounded-lg shadow-md w-full max-w-[1050px] my-1">
@@ -87,17 +144,14 @@ const KeyPageCard = ({
               className="text-sm font-semibold text-gray-600 border border-gray-300 rounded-md p-1 w-20"
             />
           </div>
-
           <input
             type="text"
             value={editableItemId}
             onChange={(e) => setEditableItemId(e.target.value)}
-            className="text-sm font-semibold text-gray-600 border border-gray-300 rounded-md  p-1 w-40"
+            className="text-sm font-semibold text-gray-600 border border-gray-300 rounded-md p-1 w-35"
           />
         </div>
-        <p className="text-sm font-bold text-gray-500 mt-5  truncate">
-          {title}
-        </p>
+        <p className="text-sm font-bold text-gray-500 mt-5 truncate">{title}</p>
       </div>
 
       <div className="flex-shrink-0 p-1">
