@@ -1,15 +1,20 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
+import Spinner from "@/components/ui/Spinner";
 
 interface StatusButtonsProps {
   hasChanges: boolean;
   onDelete: () => void;
   onUpdate: () => void;
+  isLoading?: boolean;
 }
 
 export const StatusButtons = ({
   hasChanges,
   onDelete,
   onUpdate,
+  isLoading = false,
 }: StatusButtonsProps) => {
   return (
     <div className="flex gap-2">
@@ -18,17 +23,19 @@ export const StatusButtons = ({
           variant="ghost"
           size="sm"
           onClick={onUpdate}
-          className="text-green-600 hover:text-green-800 h-10 w-10  cursor-pointer hover:bg-gray-200"
+          disabled={isLoading}
+          className="text-green-600 hover:text-green-800 h-10 w-10 cursor-pointer hover:bg-gray-200 disabled:opacity-50"
           title="Data edited - click to update"
         >
-          ✔️
+          {isLoading ? <Spinner /> : "✔️"}
         </Button>
       ) : (
         <Button
           variant="ghost"
           size="sm"
           onClick={onDelete}
-          className="text-red-600 hover:text-red-800 h-10 w-10  cursor-pointer hover:bg-gray-200"
+          disabled={isLoading}
+          className="text-red-600 hover:text-red-800 h-10 w-10 cursor-pointer hover:bg-gray-200 disabled:opacity-50"
           title="All good - click to delete"
         >
           ❌

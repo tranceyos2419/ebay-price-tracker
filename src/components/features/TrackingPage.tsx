@@ -6,6 +6,7 @@ import { StatusButtons } from "@/components/StatusButtons";
 import toast from "react-hot-toast";
 import { onUpdateTrackingPage, onDeleteTrackingPage } from "@/actions/dashoard";
 import ConfirmationModal from "./ConfirmationModal";
+import Spinner from "@/components/ui/Spinner";
 
 interface TrackingPageCardProps {
   ebay_item_id: string;
@@ -33,6 +34,7 @@ const TrackingPageCard = ({
   const [editableItemId, setEditableItemId] = useState(ebay_item_id);
   const [hasChanges, setHasChanges] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false); // Added for update progress
 
   useEffect(() => {
     setEditableItemId(ebay_item_id);
@@ -62,19 +64,24 @@ const TrackingPageCard = ({
   const handleUpdate = async () => {
     if (!validate()) return;
 
-    const updatedData = {
-      ebay_item_id: editableItemId,
-    };
+    setIsUpdating(true);
+    try {
+      const updatedData = {
+        ebay_item_id: editableItemId,
+      };
 
-    const result = await onUpdateTrackingPage(ebay_item_id, updatedData);
-    if (result.success) {
-      onUpdate(ebay_item_id, updatedData);
-      setEditableItemId(updatedData.ebay_item_id);
-      setHasChanges(false);
-      onChange(false);
-      toast.success(result.message);
-    } else {
-      toast.error(result.message);
+      const result = await onUpdateTrackingPage(ebay_item_id, updatedData);
+      if (result.success) {
+        onUpdate(ebay_item_id, updatedData);
+        setEditableItemId(updatedData.ebay_item_id);
+        setHasChanges(false);
+        onChange(false);
+        toast.success(result.message);
+      } else {
+        toast.error(result.message);
+      }
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -96,9 +103,14 @@ const TrackingPageCard = ({
   return (
     <>
       <div
-        className="flex items-start justify-between p-2 bg-gray-100 rounded-lg shadow-md w-full max-w-[650px] my-1"
-        data-ebay-id={ebay_item_id} // Add identifier for bulk update
+        className="flex items-start justify-between p-2 bg-gray-100 rounded-lg shadow-md w-full max-w-[650px] my-1 relative"
+        data-ebay-id={ebay_item_id}
       >
+        {isUpdating && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-200 bg-opacity-50 rounded-lg">
+            <Spinner />
+          </div>
+        )}
         <div className="flex-shrink-0 border border-gray-300 rounded-md p-1 h-[120px]">
           <Image
             src={image_url}
@@ -122,6 +134,7 @@ const TrackingPageCard = ({
               value={editableItemId}
               onChange={(e) => setEditableItemId(e.target.value)}
               className="text-sm font-semibold text-gray-600 border border-gray-300 rounded-md p-1 w-40"
+              disabled={isUpdating}
             />
           </div>
           {message && (
@@ -136,6 +149,7 @@ const TrackingPageCard = ({
             hasChanges={hasChanges}
             onDelete={handleDelete}
             onUpdate={handleUpdate}
+            isLoading={isUpdating}
           />
         </div>
       </div>

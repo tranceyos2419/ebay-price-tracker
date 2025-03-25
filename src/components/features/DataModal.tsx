@@ -24,6 +24,7 @@ interface DataModalProps {
 
 const DataModal = ({ onAddSuccess }: DataModalProps) => {
   const [open, setOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false); // Added for submit state
   const [formData, setFormData] = useState<DataModalFormData>({
     key_page: "",
     minimum_best_offer: undefined,
@@ -108,41 +109,49 @@ const DataModal = ({ onAddSuccess }: DataModalProps) => {
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
-    const submitData: DataModalFormData = {
-      key_page: formData.key_page,
-      ...(formData.minimum_best_offer !== undefined && {
-        minimum_best_offer: formData.minimum_best_offer,
-      }),
-      ...(formData.price !== undefined && { price: formData.price }),
-      ...(formData.page_01 && { page_01: formData.page_01 }),
-      ...(formData.page_02 && { page_02: formData.page_02 }),
-      ...(formData.page_03 && { page_03: formData.page_03 }),
-    };
+    setIsSubmitting(true);
+    try {
+      const submitData: DataModalFormData = {
+        key_page: formData.key_page,
+        ...(formData.minimum_best_offer !== undefined && {
+          minimum_best_offer: formData.minimum_best_offer,
+        }),
+        ...(formData.price !== undefined && { price: formData.price }),
+        ...(formData.page_01 && { page_01: formData.page_01 }),
+        ...(formData.page_02 && { page_02: formData.page_02 }),
+        ...(formData.page_03 && { page_03: formData.page_03 }),
+      };
 
-    const result = await onAddRecord(submitData);
+      const result = await onAddRecord(submitData);
 
-    if (result.success && result.newRow) {
-      if (onAddSuccess) onAddSuccess(result.newRow);
-      setOpen(false);
-      setFormData({
-        key_page: "",
-        minimum_best_offer: undefined,
-        price: undefined,
-        page_01: "",
-        page_02: "",
-        page_03: "",
-      });
-      setErrors({});
-      toast.success("Record added successfully");
-    } else {
-      toast.error(result.message || "Failed to add record");
+      if (result.success && result.newRow) {
+        if (onAddSuccess) onAddSuccess(result.newRow);
+        setOpen(false);
+        setFormData({
+          key_page: "",
+          minimum_best_offer: undefined,
+          price: undefined,
+          page_01: "",
+          page_02: "",
+          page_03: "",
+        });
+        setErrors({});
+        toast.success("Record added successfully");
+      } else {
+        toast.error(result.message || "Failed to add record");
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-blue-500 hover:bg-blue-600 cursor-pointer">
+        <Button
+          className="bg-blue-500 hover:bg-blue-600 cursor-pointer"
+          disabled={isSubmitting}
+        >
           ADD
         </Button>
       </DialogTrigger>
@@ -163,6 +172,7 @@ const DataModal = ({ onAddSuccess }: DataModalProps) => {
               placeholder="Ex: 386204322430"
               className="mt-2"
               required
+              disabled={isSubmitting}
             />
             {errors.key_page && (
               <p className="mt-1 text-sm text-red-500">{errors.key_page}</p>
@@ -187,6 +197,7 @@ const DataModal = ({ onAddSuccess }: DataModalProps) => {
               className="mt-2"
               step="0.01"
               min="0"
+              disabled={isSubmitting}
             />
             {errors.minimum_best_offer && (
               <p className="mt-1 text-sm text-red-500">
@@ -211,6 +222,7 @@ const DataModal = ({ onAddSuccess }: DataModalProps) => {
               className="mt-2"
               step="0.01"
               min="0"
+              disabled={isSubmitting}
             />
             {errors.price && (
               <p className="mt-1 text-sm text-red-500">{errors.price}</p>
@@ -225,6 +237,7 @@ const DataModal = ({ onAddSuccess }: DataModalProps) => {
               }
               placeholder="Ex: 386204322434"
               className="mt-2"
+              disabled={isSubmitting}
             />
             {errors.page_01 && (
               <p className="mt-1 text-sm text-red-500">{errors.page_01}</p>
@@ -239,6 +252,7 @@ const DataModal = ({ onAddSuccess }: DataModalProps) => {
               }
               placeholder="Ex: 386203231330"
               className="mt-2"
+              disabled={isSubmitting}
             />
             {errors.page_02 && (
               <p className="mt-1 text-sm text-red-500">{errors.page_02}</p>
@@ -253,6 +267,7 @@ const DataModal = ({ onAddSuccess }: DataModalProps) => {
               }
               placeholder="Ex: 342304322423"
               className="mt-2"
+              disabled={isSubmitting}
             />
             {errors.page_03 && (
               <p className="mt-1 text-sm text-red-500">{errors.page_03}</p>
@@ -262,8 +277,9 @@ const DataModal = ({ onAddSuccess }: DataModalProps) => {
             variant="primary"
             onClick={handleSubmit}
             className="w-full mt-3"
+            disabled={isSubmitting}
           >
-            Submit
+            {isSubmitting ? "Submitting..." : "Submit"}
           </Button>
         </div>
       </DialogContent>

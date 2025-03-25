@@ -6,6 +6,7 @@ import { StatusButtons } from "@/components/StatusButtons";
 import toast from "react-hot-toast";
 import { onUpdateKeyPage, onDeleteKeyPage } from "@/actions/dashoard";
 import ConfirmationModal from "./ConfirmationModal";
+import Spinner from "@/components/ui/Spinner";
 
 interface KeyPageCardProps {
   ebay_item_id: string;
@@ -41,6 +42,7 @@ const KeyPageCard = ({
   const [editableItemId, setEditableItemId] = useState(ebay_item_id);
   const [hasChanges, setHasChanges] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false); // Added for update progress
 
   useEffect(() => {
     setEditablePrice(price.toFixed(2));
@@ -95,23 +97,28 @@ const KeyPageCard = ({
   const handleUpdate = async () => {
     if (!validate()) return;
 
-    const updatedData = {
-      ebay_item_id: editableItemId,
-      price: parseFloat(editablePrice),
-      minimum_best_offer: parseFloat(editableBestOffer),
-    };
+    setIsUpdating(true);
+    try {
+      const updatedData = {
+        ebay_item_id: editableItemId,
+        price: parseFloat(editablePrice),
+        minimum_best_offer: parseFloat(editableBestOffer),
+      };
 
-    const result = await onUpdateKeyPage(ebay_item_id, updatedData);
-    if (result.success) {
-      onUpdate(ebay_item_id, updatedData);
-      setEditablePrice(updatedData.price.toFixed(2));
-      setEditableBestOffer(updatedData.minimum_best_offer.toFixed(2));
-      setEditableItemId(updatedData.ebay_item_id);
-      setHasChanges(false);
-      onChange(false);
-      toast.success(result.message);
-    } else {
-      toast.error(result.message);
+      const result = await onUpdateKeyPage(ebay_item_id, updatedData);
+      if (result.success) {
+        onUpdate(ebay_item_id, updatedData);
+        setEditablePrice(updatedData.price.toFixed(2));
+        setEditableBestOffer(updatedData.minimum_best_offer.toFixed(2));
+        setEditableItemId(updatedData.ebay_item_id);
+        setHasChanges(false);
+        onChange(false);
+        toast.success(result.message);
+      } else {
+        toast.error(result.message);
+      }
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -133,9 +140,14 @@ const KeyPageCard = ({
   return (
     <>
       <div
-        className="flex items-start justify-between p-2 bg-gray-100 rounded-lg shadow-md w-full max-w-[1050px] my-1"
-        data-ebay-id={ebay_item_id} // Add identifier for bulk update
+        className="flex items-start justify-between p-2 bg-gray-100 rounded-lg shadow-md w-full max-w-[1050px] my-1 relative"
+        data-ebay-id={ebay_item_id}
       >
+        {isUpdating && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-200 bg-opacity-50 rounded-lg">
+            <Spinner />
+          </div>
+        )}
         <div className="flex-shrink-0 border border-gray-300 rounded-md p-1 h-[120px]">
           <Image
             src={image_url}
@@ -155,6 +167,7 @@ const KeyPageCard = ({
                 value={editablePrice}
                 onChange={(e) => setEditablePrice(e.target.value)}
                 className="text-sm font-semibold text-gray-600 border border-gray-300 rounded-md p-1 w-20"
+                disabled={isUpdating}
               />
             </div>
             <div className="flex items-center gap-1">
@@ -164,6 +177,7 @@ const KeyPageCard = ({
                 value={editableBestOffer}
                 onChange={(e) => setEditableBestOffer(e.target.value)}
                 className="text-sm font-semibold text-gray-600 border border-gray-300 rounded-md p-1 w-20"
+                disabled={isUpdating}
               />
             </div>
             <input
@@ -171,6 +185,7 @@ const KeyPageCard = ({
               value={editableItemId}
               onChange={(e) => setEditableItemId(e.target.value)}
               className="text-sm font-semibold text-gray-600 border border-gray-300 rounded-md p-1 w-35"
+              disabled={isUpdating}
             />
           </div>
           <p className="text-sm font-bold text-gray-500 mt-5 truncate">
@@ -183,6 +198,7 @@ const KeyPageCard = ({
             hasChanges={hasChanges}
             onDelete={handleDelete}
             onUpdate={handleUpdate}
+            isLoading={isUpdating}
           />
         </div>
       </div>

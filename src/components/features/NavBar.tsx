@@ -46,6 +46,7 @@ const NavBar = ({
   const { theme, setTheme } = useTheme();
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false); // Added for DELETE button state
   const lastScrollY = useRef(0);
   const isAtBottom = useRef(false);
 
@@ -55,25 +56,20 @@ const NavBar = ({
       const windowHeight = window.innerHeight;
       const documentHeight = document.documentElement.scrollHeight;
 
-      // Check if at top
       if (currentScrollY === 0) {
         setIsVisible(true);
         return;
       }
 
-      // Check if at bottom
       isAtBottom.current = currentScrollY + windowHeight >= documentHeight - 10;
       if (isAtBottom.current) {
         setIsVisible(false);
         return;
       }
 
-      // Determine scroll direction
       if (currentScrollY < lastScrollY.current) {
-        // Scrolling up - show navbar immediately
         setIsVisible(true);
       } else if (currentScrollY > lastScrollY.current) {
-        // Scrolling down - hide navbar
         setIsVisible(false);
       }
 
@@ -205,11 +201,13 @@ const NavBar = ({
   };
 
   const confirmBulkDelete = async () => {
+    setIsDeleting(true);
     const rowsToDelete = selectedRows;
     for (const ebayId of rowsToDelete) {
       const result = await onDeleteKeyPage(ebayId);
       if (!result.success) {
         toast.error(`Failed to delete row ${ebayId}: ${result.message}`);
+        setIsDeleting(false);
         return;
       }
     }
@@ -218,6 +216,7 @@ const NavBar = ({
     );
     setSelectedRows([]);
     setIsBulkDeleteModalOpen(false);
+    setIsDeleting(false);
     toast.success("Selected rows deleted successfully");
   };
 
@@ -237,7 +236,7 @@ const NavBar = ({
                 : "bg-orange-400 text-gray-700 cursor-not-allowed"
             } cursor-pointer`}
             onClick={handleBulkUpdate}
-            disabled={selectedRows.length === 0}
+            disabled={selectedRows.length === 0 || isDeleting}
           >
             UPDATE
           </Button>
@@ -248,9 +247,9 @@ const NavBar = ({
                 : "bg-red-400 text-gray-700 cursor-not-allowed"
             } cursor-pointer`}
             onClick={handleBulkDelete}
-            disabled={selectedRows.length === 0}
+            disabled={selectedRows.length === 0 || isDeleting}
           >
-            DELETE
+            {isDeleting ? "Deleting..." : "DELETE"}
           </Button>
         </div>
 
@@ -259,13 +258,18 @@ const NavBar = ({
             variant="ghost"
             onClick={() => router.push("/")}
             className="flex items-center space-x-2 cursor-pointer"
+            disabled={isDeleting}
           >
             <Home className="h-4 w-4" />
             <span>Home</span>
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+              <Button
+                variant="ghost"
+                className="relative h-8 w-8 rounded-full"
+                disabled={isDeleting}
+              >
                 <Avatar className="h-13 w-13 cursor-pointer">
                   <AvatarImage src="" alt="dawit" />
                   <AvatarFallback>YF</AvatarFallback>
