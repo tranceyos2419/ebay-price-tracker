@@ -64,7 +64,7 @@ const TableView = ({ initialData }: TableViewProps) => {
                 last_updated_date: new Date().toLocaleString(),
               },
               timestamp: new Date().toLocaleString(),
-              status: "Success", // Ensure status reflects the update
+              status: "SUCCESS",
             }
           : row,
       ),
@@ -100,7 +100,7 @@ const TableView = ({ initialData }: TableViewProps) => {
           };
         }
         updatedRow.timestamp = new Date().toLocaleString();
-        updatedRow.status = "Success"; // Ensure status reflects the update
+        updatedRow.status = "SUCCESS"; // Ensure status reflects the update
         return updatedRow;
       }),
     );
@@ -272,7 +272,7 @@ const TableView = ({ initialData }: TableViewProps) => {
                     <div className="flex flex-col items-center">
                       <span
                         className={`inline-block px-4 py-2 rounded text-center ${
-                          row.status === "Success"
+                          row.status === "SUCCESS"
                             ? "bg-green-500 text-white font-semibold"
                             : "bg-red-100 text-red-700"
                         }`}

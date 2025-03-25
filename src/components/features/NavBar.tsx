@@ -25,6 +25,7 @@ import {
 } from "@/actions/dashoard";
 import toast from "react-hot-toast";
 import { TableRowData, TrackingPageData } from "@/types/interfaces";
+import { Status } from "@prisma/client";
 
 interface NavBarProps {
   onAddSuccess?: (newRow: TableRowData) => void;
@@ -166,7 +167,7 @@ const NavBar = ({
             last_updated_date: new Date().toLocaleString(),
           };
           updatedRow.timestamp = new Date().toLocaleString();
-          updatedRow.status = "Success";
+          updatedRow.status = Status.SUCCESS;
 
           [row.page01, row.page02, row.page03].forEach((page, index) => {
             if (page) {
