@@ -29,7 +29,7 @@ export interface TrackingPageData {
   price: number;
   image_url: string;
   store_name: string;
-  status: string;
+  status: "SUCCESS" | "FAILED";
   message: string;
   last_updated_date: string;
 }
@@ -40,13 +40,13 @@ export interface KeyPageData {
   minimum_best_offer: number;
   image_url: string;
   title: string;
-  status: string;
+  status: "SUCCESS" | "FAILED";
   message: string | undefined;
   last_updated_date: string;
 }
 
 export interface TableRowData {
-  status: string;
+  status: "SUCCESS" | "FAILED";
   message: string;
   timestamp: string;
   keyPage: KeyPageData;

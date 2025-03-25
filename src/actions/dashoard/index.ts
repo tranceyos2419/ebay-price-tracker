@@ -7,6 +7,7 @@ import {
   TrackingPageData,
   TableRowData,
 } from "@/types/interfaces";
+import { Prisma } from "@prisma/client";
 
 async function checkEbayItemIdUniqueness(
   ebay_item_id: string,
@@ -46,7 +47,7 @@ export const onFetchRecords = async (): Promise<{
         }));
 
       return {
-        status: "Success",
+        status: "SUCCESS",
         message: "Successfully Updated",
         timestamp: keyPage.last_updated_date.toLocaleString(),
         keyPage: {
@@ -100,7 +101,7 @@ export const onAddRecord = async (
         image_url:
           "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=1471&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
         title: "New Item",
-        status: "active",
+        status: "SUCCESS",
         message: "Key Page Added",
         last_updated_date: new Date(),
       },
@@ -120,7 +121,7 @@ export const onAddRecord = async (
         image_url:
           "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=1471&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
         store_name: "Tracking Store 01",
-        status: "active",
+        status: "SUCCESS",
         message: "Tracking Page 01",
         last_updated_date: new Date(),
         key_page_id: keyPage.key_page_id,
@@ -131,7 +132,7 @@ export const onAddRecord = async (
         price: 0,
         image_url: "/file.svg",
         store_name: "Empty Store",
-        status: "inactive",
+        status: "FAILED",
         message: "No Tracking Page",
         last_updated_date: new Date(),
         key_page_id: keyPage.key_page_id,
@@ -145,7 +146,7 @@ export const onAddRecord = async (
         image_url:
           "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=1471&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
         store_name: "Tracking Store 02",
-        status: "active",
+        status: "SUCCESS",
         message: "Tracking Page 02",
         last_updated_date: new Date(),
         key_page_id: keyPage.key_page_id,
@@ -156,7 +157,7 @@ export const onAddRecord = async (
         price: 0,
         image_url: "/file.svg",
         store_name: "Empty Store",
-        status: "inactive",
+        status: "FAILED",
         message: "No Tracking Page",
         last_updated_date: new Date(),
         key_page_id: keyPage.key_page_id,
@@ -170,7 +171,7 @@ export const onAddRecord = async (
         image_url:
           "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=1471&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
         store_name: "Tracking Store 03",
-        status: "active",
+        status: "SUCCESS",
         message: "Tracking Page 03",
         last_updated_date: new Date(),
         key_page_id: keyPage.key_page_id,
@@ -181,7 +182,7 @@ export const onAddRecord = async (
         price: 0,
         image_url: "/file.svg",
         store_name: "Empty Store",
-        status: "inactive",
+        status: "FAILED",
         message: "No Tracking Page",
         last_updated_date: new Date(),
         key_page_id: keyPage.key_page_id,
@@ -191,7 +192,7 @@ export const onAddRecord = async (
     let trackingPages: TrackingPageData[] = [];
     if (trackingPagesData.length > 0) {
       const createdPages = await prisma.trackingPage.createManyAndReturn({
-        data: trackingPagesData,
+        data: trackingPagesData as Prisma.TrackingPageCreateManyInput[],
       });
 
       trackingPages = createdPages.map((page) => ({
@@ -201,7 +202,7 @@ export const onAddRecord = async (
     }
 
     const newRow: TableRowData = {
-      status: "Success",
+      status: "SUCCESS",
       message: "New Item Added",
       timestamp: new Date().toLocaleString(),
       keyPage: {
@@ -281,6 +282,7 @@ export const onUpdateKeyPage = async (
         ebay_item_id: data.ebay_item_id,
         price: data.price,
         minimum_best_offer: data.minimum_best_offer,
+        status: "SUCCESS",
         last_updated_date: new Date(),
       },
     });
@@ -324,11 +326,11 @@ export const onUpdateTrackingPage = async (
       await prisma.trackingPage.create({
         data: {
           ebay_item_id: data.ebay_item_id,
-          price: 0, // Default price since it’s not editable
+          price: 0, // Default price since it's not editable
           image_url:
             "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=1471&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
           store_name: "Tracking Store",
-          status: "active",
+          status: "SUCCESS",
           message: "Tracking Page Created",
           last_updated_date: new Date(),
           key_page_id: placeholderRecord.key_page_id,
@@ -339,6 +341,7 @@ export const onUpdateTrackingPage = async (
         where: { ebay_item_id: originalEbayId },
         data: {
           ebay_item_id: data.ebay_item_id,
+          status: "SUCCESS",
           last_updated_date: new Date(),
         },
       });
