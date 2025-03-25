@@ -34,7 +34,7 @@ const TrackingPageCard = ({
   const [editableItemId, setEditableItemId] = useState(ebay_item_id);
   const [hasChanges, setHasChanges] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false); // Added for update progress
+  const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
     setEditableItemId(ebay_item_id);

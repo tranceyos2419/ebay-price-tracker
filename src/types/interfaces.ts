@@ -1,13 +1,14 @@
 export interface AddRecordData {
-  key_page: string;
+  key_page_ebay_item_id: string;
   minimum_best_offer?: number;
   price?: number;
   page_01?: string;
   page_02?: string;
   page_03?: string;
 }
+
 export interface DataModalFormData {
-  key_page: string;
+  key_page_ebay_item_id: string;
   minimum_best_offer?: number;
   price?: number;
   page_01?: string;
@@ -16,7 +17,7 @@ export interface DataModalFormData {
 }
 
 export interface DataModalFormErrors {
-  key_page?: string;
+  key_page_ebay_item_id?: string;
   minimum_best_offer?: string;
   price?: string;
   page_01?: string;
@@ -25,6 +26,7 @@ export interface DataModalFormErrors {
 }
 
 export interface TrackingPageData {
+  key_page_id: number;
   ebay_item_id: string;
   price: number;
   image_url: string;
@@ -35,6 +37,7 @@ export interface TrackingPageData {
 }
 
 export interface KeyPageData {
+  key_page_id: number;
   ebay_item_id: string;
   price: number;
   minimum_best_offer: number;

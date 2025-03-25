@@ -37,6 +37,7 @@ export const onFetchRecords = async (): Promise<{
       const [page01, page02, page03] = trackingPages
         .slice(0, 3)
         .map((page) => ({
+          key_page_id: page.key_page_id,
           ebay_item_id: page.ebay_item_id,
           price: page.price,
           image_url: page.image_url,
@@ -51,6 +52,7 @@ export const onFetchRecords = async (): Promise<{
         message: "Successfully Updated",
         timestamp: keyPage.last_updated_date.toLocaleString(),
         keyPage: {
+          key_page_id: keyPage.key_page_id,
           ebay_item_id: keyPage.ebay_item_id,
           price: keyPage.price,
           minimum_best_offer: keyPage.minimum_best_offer,
@@ -82,7 +84,7 @@ export const onAddRecord = async (
 }> => {
   try {
     const idsToCheck = [
-      data.key_page,
+      data.key_page_ebay_item_id,
       data.page_01,
       data.page_02,
       data.page_03,
@@ -95,7 +97,7 @@ export const onAddRecord = async (
 
     const keyPage = await prisma.keyPage.create({
       data: {
-        ebay_item_id: data.key_page,
+        ebay_item_id: data.key_page_ebay_item_id,
         price: data.price || 0,
         minimum_best_offer: data.minimum_best_offer || 0,
         image_url:
@@ -111,7 +113,7 @@ export const onAddRecord = async (
       data: { key_page_id: keyPage.key_page_id },
     });
 
-    const trackingPagesData = [];
+    const trackingPagesData: Prisma.TrackingPageCreateManyInput[] = [];
     const placeholderPrefix = `${keyPage.key_page_id}-placeholder`;
 
     if (data.page_01) {
@@ -192,12 +194,18 @@ export const onAddRecord = async (
     let trackingPages: TrackingPageData[] = [];
     if (trackingPagesData.length > 0) {
       const createdPages = await prisma.trackingPage.createManyAndReturn({
-        data: trackingPagesData as Prisma.TrackingPageCreateManyInput[],
+        data: trackingPagesData,
       });
 
       trackingPages = createdPages.map((page) => ({
-        ...page,
-        last_updated_date: page.last_updated_date.toISOString(),
+        key_page_id: page.key_page_id,
+        ebay_item_id: page.ebay_item_id,
+        price: page.price,
+        image_url: page.image_url,
+        store_name: page.store_name,
+        status: page.status,
+        message: page.message || "",
+        last_updated_date: page.last_updated_date.toLocaleString(),
       }));
     }
 
@@ -206,6 +214,7 @@ export const onAddRecord = async (
       message: "New Item Added",
       timestamp: new Date().toLocaleString(),
       keyPage: {
+        key_page_id: keyPage.key_page_id,
         ebay_item_id: keyPage.ebay_item_id,
         price: keyPage.price,
         minimum_best_offer: keyPage.minimum_best_offer,
@@ -215,42 +224,9 @@ export const onAddRecord = async (
         message: keyPage.message,
         last_updated_date: keyPage.last_updated_date.toLocaleString(),
       },
-      page01: trackingPages[0]
-        ? {
-            ebay_item_id: trackingPages[0].ebay_item_id,
-            price: trackingPages[0].price,
-            image_url: trackingPages[0].image_url,
-            store_name: trackingPages[0].store_name,
-            status: trackingPages[0].status,
-            message: trackingPages[0].message,
-            last_updated_date:
-              trackingPages[0].last_updated_date.toLocaleString(),
-          }
-        : undefined,
-      page02: trackingPages[1]
-        ? {
-            ebay_item_id: trackingPages[1].ebay_item_id,
-            price: trackingPages[1].price,
-            image_url: trackingPages[1].image_url,
-            store_name: trackingPages[1].store_name,
-            status: trackingPages[1].status,
-            message: trackingPages[1].message,
-            last_updated_date:
-              trackingPages[1].last_updated_date.toLocaleString(),
-          }
-        : undefined,
-      page03: trackingPages[2]
-        ? {
-            ebay_item_id: trackingPages[2].ebay_item_id,
-            price: trackingPages[2].price,
-            image_url: trackingPages[2].image_url,
-            store_name: trackingPages[2].store_name,
-            status: trackingPages[2].status,
-            message: trackingPages[2].message,
-            last_updated_date:
-              trackingPages[2].last_updated_date.toLocaleString(),
-          }
-        : undefined,
+      page01: trackingPages[0],
+      page02: trackingPages[1],
+      page03: trackingPages[2],
     };
 
     revalidatePath("/dashboard");
@@ -326,7 +302,7 @@ export const onUpdateTrackingPage = async (
       await prisma.trackingPage.create({
         data: {
           ebay_item_id: data.ebay_item_id,
-          price: 0, // Default price since it's not editable
+          price: 0,
           image_url:
             "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=1471&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
           store_name: "Tracking Store",
@@ -404,5 +380,65 @@ export const onDeleteTrackingPage = async (
   } catch (error) {
     console.error("Error deleting tracking page:", error);
     return { success: false, message: "Failed to delete tracking page" };
+  }
+};
+
+export const onAddTrackingPage = async (
+  keyPageId: number,
+  data: { ebay_item_id: string; price: number },
+): Promise<{
+  success: boolean;
+  message: string;
+  newTrackingPage?: TrackingPageData;
+}> => {
+  try {
+    if (!(await checkEbayItemIdUniqueness(data.ebay_item_id))) {
+      return {
+        success: false,
+        message: `eBay Item ID ${data.ebay_item_id} already exists`,
+      };
+    }
+
+    const keyPage = await prisma.keyPage.findUnique({
+      where: { key_page_id: keyPageId },
+    });
+    if (!keyPage) {
+      return { success: false, message: "Key Page not found" };
+    }
+
+    const newTrackingPage = await prisma.trackingPage.create({
+      data: {
+        ebay_item_id: data.ebay_item_id,
+        price: data.price,
+        image_url:
+          "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=1471&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        store_name: "Tracking Store",
+        status: "SUCCESS",
+        message: "Tracking Page Added",
+        last_updated_date: new Date(),
+        key_page_id: keyPageId,
+      },
+    });
+
+    const trackingPageData: TrackingPageData = {
+      key_page_id: newTrackingPage.key_page_id,
+      ebay_item_id: newTrackingPage.ebay_item_id,
+      price: newTrackingPage.price,
+      image_url: newTrackingPage.image_url,
+      store_name: newTrackingPage.store_name,
+      status: newTrackingPage.status,
+      message: newTrackingPage.message || "",
+      last_updated_date: newTrackingPage.last_updated_date.toLocaleString(),
+    };
+
+    revalidatePath("/dashboard");
+    return {
+      success: true,
+      message: "Tracking Page added successfully",
+      newTrackingPage: trackingPageData,
+    };
+  } catch (error) {
+    console.error("Error adding tracking page:", error);
+    return { success: false, message: "Failed to add tracking page" };
   }
 };

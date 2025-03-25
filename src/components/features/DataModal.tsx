@@ -24,9 +24,9 @@ interface DataModalProps {
 
 const DataModal = ({ onAddSuccess }: DataModalProps) => {
   const [open, setOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false); // Added for submit state
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<DataModalFormData>({
-    key_page: "",
+    key_page_ebay_item_id: "",
     minimum_best_offer: undefined,
     price: undefined,
     page_01: "",
@@ -48,15 +48,15 @@ const DataModal = ({ onAddSuccess }: DataModalProps) => {
   const validateForm = (): boolean => {
     const newErrors: DataModalFormErrors = {};
 
-    if (!formData.key_page.trim()) {
-      newErrors.key_page = "Key Page item id is required";
-      toast.error("Key Page item id is required");
+    if (!formData.key_page_ebay_item_id.trim()) {
+      newErrors.key_page_ebay_item_id = "Key Page eBay Item ID is required";
+      toast.error("Key Page eBay Item ID is required");
     } else {
       const keyPageError = validateItemId(
-        formData.key_page,
-        "Key Page item id",
+        formData.key_page_ebay_item_id,
+        "Key Page eBay Item ID",
       );
-      if (keyPageError) newErrors.key_page = keyPageError;
+      if (keyPageError) newErrors.key_page_ebay_item_id = keyPageError;
     }
 
     if (formData.page_01) {
@@ -91,14 +91,15 @@ const DataModal = ({ onAddSuccess }: DataModalProps) => {
     }
 
     const ids = [
-      formData.key_page,
+      formData.key_page_ebay_item_id,
       formData.page_01,
       formData.page_02,
       formData.page_03,
     ].filter(Boolean);
     const uniqueIds = new Set(ids);
     if (uniqueIds.size !== ids.length) {
-      newErrors.key_page = "eBay item IDs must be unique across all fields";
+      newErrors.key_page_ebay_item_id =
+        "eBay item IDs must be unique across all fields";
       toast.error("eBay item IDs must be unique across all fields");
     }
 
@@ -112,7 +113,7 @@ const DataModal = ({ onAddSuccess }: DataModalProps) => {
     setIsSubmitting(true);
     try {
       const submitData: DataModalFormData = {
-        key_page: formData.key_page,
+        key_page_ebay_item_id: formData.key_page_ebay_item_id,
         ...(formData.minimum_best_offer !== undefined && {
           minimum_best_offer: formData.minimum_best_offer,
         }),
@@ -128,7 +129,7 @@ const DataModal = ({ onAddSuccess }: DataModalProps) => {
         if (onAddSuccess) onAddSuccess(result.newRow);
         setOpen(false);
         setFormData({
-          key_page: "",
+          key_page_ebay_item_id: "",
           minimum_best_offer: undefined,
           price: undefined,
           page_01: "",
@@ -162,20 +163,25 @@ const DataModal = ({ onAddSuccess }: DataModalProps) => {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium">
-              Key Page <span className="text-red-500">*</span>
+              Key Page eBay Item ID <span className="text-red-500">*</span>
             </label>
             <Input
-              value={formData.key_page}
+              value={formData.key_page_ebay_item_id}
               onChange={(e) =>
-                setFormData({ ...formData, key_page: e.target.value })
+                setFormData({
+                  ...formData,
+                  key_page_ebay_item_id: e.target.value,
+                })
               }
               placeholder="Ex: 386204322430"
               className="mt-2"
               required
               disabled={isSubmitting}
             />
-            {errors.key_page && (
-              <p className="mt-1 text-sm text-red-500">{errors.key_page}</p>
+            {errors.key_page_ebay_item_id && (
+              <p className="mt-1 text-sm text-red-500">
+                {errors.key_page_ebay_item_id}
+              </p>
             )}
           </div>
           <div>

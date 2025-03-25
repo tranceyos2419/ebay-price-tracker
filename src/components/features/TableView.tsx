@@ -27,6 +27,7 @@ import {
 import KeyPageCard from "./KeyPage";
 import TrackingPageCard from "./TrackingPage";
 import NavBar from "./NavBar";
+import AddTrackingPageModal from "./AddTrackingPageModal";
 import { TableRowData, TrackingPageData } from "@/types/interfaces";
 
 export interface TableViewProps {
@@ -69,7 +70,6 @@ const TableView = ({ initialData }: TableViewProps) => {
           : row,
       ),
     );
-    // Reset selection after successful update
     setSelectedRows((prev) => prev.filter((id) => id !== originalEbayId));
   };
 
@@ -100,7 +100,7 @@ const TableView = ({ initialData }: TableViewProps) => {
           };
         }
         updatedRow.timestamp = new Date().toLocaleString();
-        updatedRow.status = "SUCCESS"; // Ensure status reflects the update
+        updatedRow.status = "SUCCESS";
         return updatedRow;
       }),
     );
@@ -137,6 +137,25 @@ const TableView = ({ initialData }: TableViewProps) => {
         updatedRow.timestamp = new Date().toLocaleString();
         return updatedRow;
       }),
+    );
+  };
+
+  const handleAddTrackingPage = (
+    keyPageEbayId: string,
+    position: "page01" | "page02" | "page03",
+    newTrackingPage: TrackingPageData,
+  ) => {
+    setData((prevData) =>
+      prevData.map((row) =>
+        row.keyPage.ebay_item_id === keyPageEbayId
+          ? {
+              ...row,
+              [position]: newTrackingPage,
+              timestamp: new Date().toLocaleString(),
+              status: "SUCCESS",
+            }
+          : row,
+      ),
     );
   };
 
@@ -177,7 +196,7 @@ const TableView = ({ initialData }: TableViewProps) => {
       />
       <div className="flex-1 overflow-x-auto overflow-y-auto mt-20">
         <p className="mb-3">
-          <span className="font-bold">Total number of rows:</span> &nbsp;{" "}
+          <span className="font-bold">Total number of rows:</span>  {" "}
           {initialData.length}
         </p>
         <Table
@@ -302,7 +321,7 @@ const TableView = ({ initialData }: TableViewProps) => {
                     />
                   </TableCell>
                   <TableCell className="border border-gray-300 p-2 align-top min-w-[650px]">
-                    {row.page01 && (
+                    {row.page01 ? (
                       <TrackingPageCard
                         {...row.page01}
                         onUpdate={handleUpdateTrackingPage}
@@ -314,10 +333,24 @@ const TableView = ({ initialData }: TableViewProps) => {
                           handleRowChange(row.keyPage.ebay_item_id, hasChanges)
                         }
                       />
+                    ) : row.keyPage.key_page_id !== undefined ? ( // Check if key_page_id exists
+                      <AddTrackingPageModal
+                        keyPageId={row.keyPage.key_page_id}
+                        onAddSuccess={(newTrackingPage) =>
+                          handleAddTrackingPage(
+                            row.keyPage.ebay_item_id,
+                            "page01",
+                            newTrackingPage,
+                          )
+                        }
+                        position="page01"
+                      />
+                    ) : (
+                      <div>No Key Page ID available</div> // Fallback if key_page_id is missing
                     )}
                   </TableCell>
                   <TableCell className="border border-gray-300 p-2 align-top min-w-[650px]">
-                    {row.page02 && (
+                    {row.page02 ? (
                       <TrackingPageCard
                         {...row.page02}
                         onUpdate={handleUpdateTrackingPage}
@@ -329,10 +362,24 @@ const TableView = ({ initialData }: TableViewProps) => {
                           handleRowChange(row.keyPage.ebay_item_id, hasChanges)
                         }
                       />
+                    ) : row.keyPage.key_page_id !== undefined ? (
+                      <AddTrackingPageModal
+                        keyPageId={row.keyPage.key_page_id}
+                        onAddSuccess={(newTrackingPage) =>
+                          handleAddTrackingPage(
+                            row.keyPage.ebay_item_id,
+                            "page02",
+                            newTrackingPage,
+                          )
+                        }
+                        position="page02"
+                      />
+                    ) : (
+                      <div>No Key Page ID available</div>
                     )}
                   </TableCell>
                   <TableCell className="border border-gray-300 p-2 align-top min-w-[650px]">
-                    {row.page03 && (
+                    {row.page03 ? (
                       <TrackingPageCard
                         {...row.page03}
                         onUpdate={handleUpdateTrackingPage}
@@ -344,6 +391,20 @@ const TableView = ({ initialData }: TableViewProps) => {
                           handleRowChange(row.keyPage.ebay_item_id, hasChanges)
                         }
                       />
+                    ) : row.keyPage.key_page_id !== undefined ? (
+                      <AddTrackingPageModal
+                        keyPageId={row.keyPage.key_page_id}
+                        onAddSuccess={(newTrackingPage) =>
+                          handleAddTrackingPage(
+                            row.keyPage.ebay_item_id,
+                            "page03",
+                            newTrackingPage,
+                          )
+                        }
+                        position="page03"
+                      />
+                    ) : (
+                      <div>No Key Page ID available</div>
                     )}
                   </TableCell>
                 </TableRow>
