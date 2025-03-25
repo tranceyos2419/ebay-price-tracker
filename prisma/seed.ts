@@ -239,8 +239,10 @@ async function main() {
         last_updated_date: new Date(),
       },
     ],
+    skipDuplicates: true,
   });
 
+  // Then create items
   await prisma.item.createMany({
     data: Array.from({ length: 20 }, (_, i) => ({
       key_page_id: i + 1,

@@ -7,6 +7,11 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Status {
+  FAILED
+  SUCCESS
+}
+
 model Item {
   item_id     Int     @id @default(autoincrement())
   key_page_id Int
@@ -20,7 +25,7 @@ model KeyPage {
   minimum_best_offer Float
   image_url          String
   title              String
-  status             String
+  status             Status
   message            String
   last_updated_date  DateTime
   items              Item[]
@@ -33,7 +38,7 @@ model TrackingPage {
   price             Float
   image_url         String
   store_name        String
-  status            String
+  status            Status
   message           String
   last_updated_date DateTime
   key_page_id       Int

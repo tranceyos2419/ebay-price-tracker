@@ -27,37 +27,7 @@ import {
 import KeyPageCard from "./KeyPage";
 import TrackingPageCard from "./TrackingPage";
 import NavBar from "./NavBar";
-
-export interface TrackingPageData {
-  ebay_item_id: string;
-  price: number;
-  image_url: string;
-  store_name: string;
-  status: string;
-  message: string;
-  last_updated_date: string;
-}
-
-export interface KeyPageData {
-  ebay_item_id: string;
-  price: number;
-  minimum_best_offer: number;
-  image_url: string;
-  title: string;
-  status: string;
-  message: string | undefined;
-  last_updated_date: string;
-}
-
-export interface TableRowData {
-  status: string;
-  message: string;
-  timestamp: string;
-  keyPage: KeyPageData;
-  page01?: TrackingPageData;
-  page02?: TrackingPageData;
-  page03?: TrackingPageData;
-}
+import { TableRowData, TrackingPageData } from "@/types/interfaces";
 
 export interface TableViewProps {
   initialData: TableRowData[];
@@ -67,6 +37,7 @@ const TableView = ({ initialData }: TableViewProps) => {
   const [data, setData] = useState(initialData);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
+  const [selectedRows, setSelectedRows] = useState<string[]>([]);
 
   const handleAddSuccess = (newRow: TableViewProps["initialData"][0]) => {
     setData((prevData) => [newRow, ...prevData]);
@@ -93,15 +64,18 @@ const TableView = ({ initialData }: TableViewProps) => {
                 last_updated_date: new Date().toLocaleString(),
               },
               timestamp: new Date().toLocaleString(),
+              status: "Success", // Ensure status reflects the update
             }
           : row,
       ),
     );
+    // Reset selection after successful update
+    setSelectedRows((prev) => prev.filter((id) => id !== originalEbayId));
   };
 
   const handleUpdateTrackingPage = (
     originalEbayId: string,
-    updatedData: { ebay_item_id: string; price: number },
+    updatedData: { ebay_item_id: string },
   ) => {
     setData((prevData) =>
       prevData.map((row) => {
@@ -110,34 +84,41 @@ const TableView = ({ initialData }: TableViewProps) => {
           updatedRow.page01 = {
             ...row.page01,
             ebay_item_id: updatedData.ebay_item_id,
-            price: updatedData.price,
             last_updated_date: new Date().toLocaleString(),
           };
         } else if (row.page02 && row.page02.ebay_item_id === originalEbayId) {
           updatedRow.page02 = {
             ...row.page02,
             ebay_item_id: updatedData.ebay_item_id,
-            price: updatedData.price,
             last_updated_date: new Date().toLocaleString(),
           };
         } else if (row.page03 && row.page03.ebay_item_id === originalEbayId) {
           updatedRow.page03 = {
             ...row.page03,
             ebay_item_id: updatedData.ebay_item_id,
-            price: updatedData.price,
             last_updated_date: new Date().toLocaleString(),
           };
         }
         updatedRow.timestamp = new Date().toLocaleString();
+        updatedRow.status = "Success"; // Ensure status reflects the update
         return updatedRow;
       }),
     );
+    const rowId = data.find((row) =>
+      [row.page01, row.page02, row.page03].some(
+        (page) => page?.ebay_item_id === originalEbayId,
+      ),
+    )?.keyPage.ebay_item_id;
+    if (rowId) {
+      setSelectedRows((prev) => prev.filter((id) => id !== rowId));
+    }
   };
 
   const handleDeleteKeyPage = (ebay_item_id: string) => {
     setData((prevData) =>
       prevData.filter((row) => row.keyPage.ebay_item_id !== ebay_item_id),
     );
+    setSelectedRows((prev) => prev.filter((id) => id !== ebay_item_id));
   };
 
   const handleDeleteTrackingPage = (ebay_item_id: string) => {
@@ -159,6 +140,26 @@ const TableView = ({ initialData }: TableViewProps) => {
     );
   };
 
+  const toggleRowSelection = (ebay_item_id: string) => {
+    setSelectedRows((prev) =>
+      prev.includes(ebay_item_id)
+        ? prev.filter((id) => id !== ebay_item_id)
+        : [...prev, ebay_item_id],
+    );
+  };
+
+  const handleRowChange = (ebay_item_id: string, hasChanges: boolean) => {
+    setSelectedRows((prev) => {
+      const isSelected = prev.includes(ebay_item_id);
+      if (hasChanges && !isSelected) {
+        return [...prev, ebay_item_id];
+      } else if (!hasChanges && isSelected) {
+        return prev.filter((id) => id !== ebay_item_id);
+      }
+      return prev;
+    });
+  };
+
   const totalPages = Math.ceil(data.length / itemsPerPage);
   const paginatedData = data.slice(
     (currentPage - 1) * itemsPerPage,
@@ -167,16 +168,55 @@ const TableView = ({ initialData }: TableViewProps) => {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <NavBar onAddSuccess={handleAddSuccess} />
-      <div className="flex-1 overflow-x-auto overflow-y-auto mt-5">
+      <NavBar
+        onAddSuccess={handleAddSuccess}
+        selectedRows={selectedRows}
+        data={data}
+        setData={setData}
+        setSelectedRows={setSelectedRows}
+      />
+      <div className="flex-1 overflow-x-auto overflow-y-auto mt-20">
+        <p className="mb-3">
+          <span className="font-bold">Total number of rows:</span> &nbsp;{" "}
+          {initialData.length}
+        </p>
         <Table
           className="border-collapse border border-gray-300"
           style={{ tableLayout: "auto", minWidth: "fit-content" }}
         >
           <TableHeader>
             <TableRow className="bg-blue-500">
-              <TableHead className="w-10 text-white border border-gray-300 p-2">
-                <input type="checkbox" />
+              <TableHead className="w-10 text-white border border-gray-300 p-2 text-center">
+                <input
+                  type="checkbox"
+                  className="h-5 w-5 cursor-pointer"
+                  checked={paginatedData.every((row) =>
+                    selectedRows.includes(row.keyPage.ebay_item_id),
+                  )}
+                  onChange={() => {
+                    if (
+                      paginatedData.every((row) =>
+                        selectedRows.includes(row.keyPage.ebay_item_id),
+                      )
+                    ) {
+                      setSelectedRows(
+                        selectedRows.filter(
+                          (id) =>
+                            !paginatedData.some(
+                              (row) => row.keyPage.ebay_item_id === id,
+                            ),
+                        ),
+                      );
+                    } else {
+                      setSelectedRows([
+                        ...selectedRows,
+                        ...paginatedData
+                          .map((row) => row.keyPage.ebay_item_id)
+                          .filter((id) => !selectedRows.includes(id)),
+                      ]);
+                    }
+                  }}
+                />
               </TableHead>
               <TableHead className="text-white border border-gray-300 p-2">
                 Status
@@ -212,10 +252,21 @@ const TableView = ({ initialData }: TableViewProps) => {
               paginatedData.map((row) => (
                 <TableRow
                   key={row.keyPage.ebay_item_id}
-                  className="hover:bg-gray-50"
+                  className={`hover:bg-gray-50 ${
+                    selectedRows.includes(row.keyPage.ebay_item_id)
+                      ? "bg-gray-200"
+                      : ""
+                  }`}
                 >
-                  <TableCell className="border border-gray-300 p-2 align-top">
-                    <input type="checkbox" />
+                  <TableCell className="border border-gray-300 p-2 align-middle text-center">
+                    <input
+                      type="checkbox"
+                      className="h-5 w-5 cursor-pointer"
+                      checked={selectedRows.includes(row.keyPage.ebay_item_id)}
+                      onChange={() =>
+                        toggleRowSelection(row.keyPage.ebay_item_id)
+                      }
+                    />
                   </TableCell>
                   <TableCell className="border border-gray-300 p-2 align-middle text-center">
                     <div className="flex flex-col items-center">
@@ -245,6 +296,9 @@ const TableView = ({ initialData }: TableViewProps) => {
                       onDelete={() =>
                         handleDeleteKeyPage(row.keyPage.ebay_item_id)
                       }
+                      onChange={(hasChanges) =>
+                        handleRowChange(row.keyPage.ebay_item_id, hasChanges)
+                      }
                     />
                   </TableCell>
                   <TableCell className="border border-gray-300 p-2 align-top min-w-[650px]">
@@ -255,6 +309,9 @@ const TableView = ({ initialData }: TableViewProps) => {
                         onDelete={() =>
                           row.page01?.ebay_item_id &&
                           handleDeleteTrackingPage(row.page01.ebay_item_id)
+                        }
+                        onChange={(hasChanges) =>
+                          handleRowChange(row.keyPage.ebay_item_id, hasChanges)
                         }
                       />
                     )}
@@ -268,6 +325,9 @@ const TableView = ({ initialData }: TableViewProps) => {
                           row.page02?.ebay_item_id &&
                           handleDeleteTrackingPage(row.page02.ebay_item_id)
                         }
+                        onChange={(hasChanges) =>
+                          handleRowChange(row.keyPage.ebay_item_id, hasChanges)
+                        }
                       />
                     )}
                   </TableCell>
@@ -279,6 +339,9 @@ const TableView = ({ initialData }: TableViewProps) => {
                         onDelete={() =>
                           row.page03?.ebay_item_id &&
                           handleDeleteTrackingPage(row.page03.ebay_item_id)
+                        }
+                        onChange={(hasChanges) =>
+                          handleRowChange(row.keyPage.ebay_item_id, hasChanges)
                         }
                       />
                     )}

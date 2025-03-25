@@ -1,11 +1,12 @@
 "use server";
 
-import prisma from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import {
-  TableViewProps,
+  AddRecordData,
   TrackingPageData,
-} from "@/components/features/TableView";
+  TableRowData,
+} from "@/types/interfaces";
 
 async function checkEbayItemIdUniqueness(
   ebay_item_id: string,
@@ -22,7 +23,7 @@ async function checkEbayItemIdUniqueness(
 }
 
 export const onFetchRecords = async (): Promise<{
-  initialData: TableViewProps["initialData"];
+  initialData: TableRowData[];
 }> => {
   try {
     const keyPages = await prisma.keyPage.findMany({
@@ -30,41 +31,39 @@ export const onFetchRecords = async (): Promise<{
       orderBy: { last_updated_date: "desc" },
     });
 
-    const initialData: TableViewProps["initialData"] = keyPages.map(
-      (keyPage) => {
-        const trackingPages = keyPage.TrackingPage || [];
-        const [page01, page02, page03] = trackingPages
-          .slice(0, 3)
-          .map((page) => ({
-            ebay_item_id: page.ebay_item_id,
-            price: page.price,
-            image_url: page.image_url,
-            store_name: page.store_name,
-            status: page.status,
-            message: page.message || "",
-            last_updated_date: page.last_updated_date.toLocaleString(),
-          }));
+    const initialData: TableRowData[] = keyPages.map((keyPage) => {
+      const trackingPages = keyPage.TrackingPage || [];
+      const [page01, page02, page03] = trackingPages
+        .slice(0, 3)
+        .map((page) => ({
+          ebay_item_id: page.ebay_item_id,
+          price: page.price,
+          image_url: page.image_url,
+          store_name: page.store_name,
+          status: page.status,
+          message: page.message || "",
+          last_updated_date: page.last_updated_date.toLocaleString(),
+        }));
 
-        return {
-          status: "Success",
-          message: "Successfully Updated",
-          timestamp: keyPage.last_updated_date.toLocaleString(),
-          keyPage: {
-            ebay_item_id: keyPage.ebay_item_id,
-            price: keyPage.price,
-            minimum_best_offer: keyPage.minimum_best_offer,
-            image_url: keyPage.image_url,
-            title: keyPage.title,
-            status: keyPage.status,
-            message: keyPage.message || undefined,
-            last_updated_date: keyPage.last_updated_date.toLocaleString(),
-          },
-          page01: page01 || undefined,
-          page02: page02 || undefined,
-          page03: page03 || undefined,
-        };
-      },
-    );
+      return {
+        status: "Success",
+        message: "Successfully Updated",
+        timestamp: keyPage.last_updated_date.toLocaleString(),
+        keyPage: {
+          ebay_item_id: keyPage.ebay_item_id,
+          price: keyPage.price,
+          minimum_best_offer: keyPage.minimum_best_offer,
+          image_url: keyPage.image_url,
+          title: keyPage.title,
+          status: keyPage.status,
+          message: keyPage.message || undefined,
+          last_updated_date: keyPage.last_updated_date.toLocaleString(),
+        },
+        page01: page01 || undefined,
+        page02: page02 || undefined,
+        page03: page03 || undefined,
+      };
+    });
 
     return { initialData };
   } catch (error) {
@@ -73,21 +72,12 @@ export const onFetchRecords = async (): Promise<{
   }
 };
 
-interface AddRecordData {
-  key_page: string;
-  minimum_best_offer?: number;
-  price?: number;
-  page_01?: string;
-  page_02?: string;
-  page_03?: string;
-}
-
 export const onAddRecord = async (
   data: AddRecordData,
 ): Promise<{
   success: boolean;
   message: string;
-  newRow?: TableViewProps["initialData"][0];
+  newRow?: TableRowData;
 }> => {
   try {
     const idsToCheck = [
@@ -210,7 +200,7 @@ export const onAddRecord = async (
       }));
     }
 
-    const newRow: TableViewProps["initialData"][0] = {
+    const newRow: TableRowData = {
       status: "Success",
       message: "New Item Added",
       timestamp: new Date().toLocaleString(),
@@ -304,7 +294,7 @@ export const onUpdateKeyPage = async (
 
 export const onUpdateTrackingPage = async (
   originalEbayId: string,
-  data: { ebay_item_id: string; price: number },
+  data: { ebay_item_id: string },
 ): Promise<{ success: boolean; message: string }> => {
   try {
     if (data.ebay_item_id !== originalEbayId) {
@@ -318,7 +308,6 @@ export const onUpdateTrackingPage = async (
 
     const isPlaceholder = originalEbayId.includes("-placeholder-");
     if (isPlaceholder) {
-      // Fetch the key_page_id from the placeholder record
       const placeholderRecord = await prisma.trackingPage.findUnique({
         where: { ebay_item_id: originalEbayId },
         select: { key_page_id: true },
@@ -328,7 +317,6 @@ export const onUpdateTrackingPage = async (
         return { success: false, message: "Placeholder record not found" };
       }
 
-      // Delete the placeholder and create a new record
       await prisma.trackingPage.delete({
         where: { ebay_item_id: originalEbayId },
       });
@@ -336,7 +324,7 @@ export const onUpdateTrackingPage = async (
       await prisma.trackingPage.create({
         data: {
           ebay_item_id: data.ebay_item_id,
-          price: data.price,
+          price: 0, // Default price since it’s not editable
           image_url:
             "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=1471&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
           store_name: "Tracking Store",
@@ -347,12 +335,10 @@ export const onUpdateTrackingPage = async (
         },
       });
     } else {
-      // Update existing record
       await prisma.trackingPage.update({
         where: { ebay_item_id: originalEbayId },
         data: {
           ebay_item_id: data.ebay_item_id,
-          price: data.price,
           last_updated_date: new Date(),
         },
       });

@@ -12,33 +12,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import toast from "react-hot-toast";
 import { onAddRecord } from "@/actions/dashoard";
-import { TableViewProps } from "./TableView";
-
-interface FormData {
-  key_page: string;
-  minimum_best_offer?: number;
-  price?: number;
-  page_01?: string;
-  page_02?: string;
-  page_03?: string;
-}
-
-interface FormErrors {
-  key_page?: string;
-  minimum_best_offer?: string;
-  price?: string;
-  page_01?: string;
-  page_02?: string;
-  page_03?: string;
-}
+import {
+  DataModalFormData,
+  DataModalFormErrors,
+  TableRowData,
+} from "@/types/interfaces";
 
 interface DataModalProps {
-  onAddSuccess?: (newRow: TableViewProps["initialData"][0]) => void;
+  onAddSuccess?: (newRow: TableRowData) => void;
 }
 
 const DataModal = ({ onAddSuccess }: DataModalProps) => {
   const [open, setOpen] = useState(false);
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState<DataModalFormData>({
     key_page: "",
     minimum_best_offer: undefined,
     price: undefined,
@@ -46,7 +32,7 @@ const DataModal = ({ onAddSuccess }: DataModalProps) => {
     page_02: "",
     page_03: "",
   });
-  const [errors, setErrors] = useState<FormErrors>({});
+  const [errors, setErrors] = useState<DataModalFormErrors>({});
 
   const validateItemId = (
     id: string,
@@ -59,7 +45,7 @@ const DataModal = ({ onAddSuccess }: DataModalProps) => {
   };
 
   const validateForm = (): boolean => {
-    const newErrors: FormErrors = {};
+    const newErrors: DataModalFormErrors = {};
 
     if (!formData.key_page.trim()) {
       newErrors.key_page = "Key Page item id is required";
@@ -103,7 +89,6 @@ const DataModal = ({ onAddSuccess }: DataModalProps) => {
       toast.error("Price must be a valid positive number");
     }
 
-    // Check for duplicate ebay_item_ids within the form
     const ids = [
       formData.key_page,
       formData.page_01,
@@ -123,7 +108,7 @@ const DataModal = ({ onAddSuccess }: DataModalProps) => {
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
-    const submitData: FormData = {
+    const submitData: DataModalFormData = {
       key_page: formData.key_page,
       ...(formData.minimum_best_offer !== undefined && {
         minimum_best_offer: formData.minimum_best_offer,
