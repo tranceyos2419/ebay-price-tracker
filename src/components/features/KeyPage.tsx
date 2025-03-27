@@ -1,12 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { StatusButtons } from "@/components/StatusButtons";
 import toast from "react-hot-toast";
 import { onUpdateKeyPage, onDeleteKeyPage } from "@/actions/dashoard";
 import ConfirmationModal from "./ConfirmationModal";
-import Spinner from "@/components/ui/Spinner";
 
 interface KeyPageCardProps {
   ebay_item_id: string;
@@ -14,7 +13,7 @@ interface KeyPageCardProps {
   minimum_best_offer: number;
   image_url: string;
   title: string;
-  status: string;
+  status: "SUCCESS" | "FAILED";
   message?: string;
   last_updated_date: string;
   onUpdate: (
@@ -31,6 +30,7 @@ const KeyPageCard = ({
   minimum_best_offer,
   image_url,
   title,
+  status,
   onUpdate,
   onDelete,
   onChange,
@@ -42,7 +42,9 @@ const KeyPageCard = ({
   const [editableItemId, setEditableItemId] = useState(ebay_item_id);
   const [hasChanges, setHasChanges] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false); // Added for update progress
+  const [isUpdating, setIsUpdating] = useState(false);
+  const titleRef = useRef<HTMLParagraphElement>(null);
+  const [truncatedTitle, setTruncatedTitle] = useState(title);
 
   useEffect(() => {
     setEditablePrice(price.toFixed(2));
@@ -70,6 +72,37 @@ const KeyPageCard = ({
     hasChanges,
     onChange,
   ]);
+
+  useEffect(() => {
+    const truncateTitle = () => {
+      if (titleRef.current) {
+        const element = titleRef.current;
+        const originalTitle = title;
+        let truncated = originalTitle;
+
+        // Reset to original title first
+        element.textContent = originalTitle;
+
+        // Check if text overflows
+        while (
+          element.scrollWidth > element.clientWidth &&
+          truncated.length > 0
+        ) {
+          truncated = truncated.slice(0, -1);
+          element.textContent = truncated + "...";
+        }
+
+        setTruncatedTitle(element.textContent || originalTitle);
+      }
+    };
+
+    truncateTitle();
+    window.addEventListener("resize", truncateTitle);
+
+    return () => {
+      window.removeEventListener("resize", truncateTitle);
+    };
+  }, [title]);
 
   const validate = (): boolean => {
     if (
@@ -143,11 +176,6 @@ const KeyPageCard = ({
         className="flex items-start justify-between p-2 bg-gray-100 rounded-lg shadow-md w-full max-w-[1050px] my-1 relative"
         data-ebay-id={ebay_item_id}
       >
-        {isUpdating && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-200 bg-opacity-50 rounded-lg">
-            <Spinner />
-          </div>
-        )}
         <div className="flex-shrink-0 border border-gray-300 rounded-md p-1 h-[120px]">
           <Image
             src={image_url}
@@ -158,7 +186,7 @@ const KeyPageCard = ({
           />
         </div>
 
-        <div className="flex-1 p-2">
+        <div className="flex-1 p-2 overflow-hidden">
           <div className="flex items-start gap-2">
             <div className="flex items-center gap-1">
               <span className="font-bold text-center">$</span>
@@ -188,8 +216,12 @@ const KeyPageCard = ({
               disabled={isUpdating}
             />
           </div>
-          <p className="text-sm font-bold text-gray-500 mt-5 truncate">
-            {title}
+          <p
+            ref={titleRef}
+            className="text-sm font-bold text-gray-500 mt-5 whitespace-nowrap overflow-hidden text-ellipsis max-w-full"
+            title={title}
+          >
+            {truncatedTitle}
           </p>
         </div>
 
@@ -199,6 +231,7 @@ const KeyPageCard = ({
             onDelete={handleDelete}
             onUpdate={handleUpdate}
             isLoading={isUpdating}
+            status={status}
           />
         </div>
       </div>

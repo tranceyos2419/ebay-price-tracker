@@ -40,7 +40,7 @@ const TableView = ({ initialData }: TableViewProps) => {
   const [itemsPerPage, setItemsPerPage] = useState(20);
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
 
-  const handleAddSuccess = (newRow: TableViewProps["initialData"][0]) => {
+  const handleAddSuccess = (newRow: TableRowData) => {
     setData((prevData) => [newRow, ...prevData]);
   };
 
@@ -53,22 +53,26 @@ const TableView = ({ initialData }: TableViewProps) => {
     },
   ) => {
     setData((prevData) =>
-      prevData.map((row) =>
-        row.keyPage.ebay_item_id === originalEbayId
-          ? {
-              ...row,
-              keyPage: {
-                ...row.keyPage,
-                ebay_item_id: updatedData.ebay_item_id,
-                price: updatedData.price,
-                minimum_best_offer: updatedData.minimum_best_offer,
-                last_updated_date: new Date().toLocaleString(),
-              },
-              timestamp: new Date().toLocaleString(),
-              status: "SUCCESS",
-            }
-          : row,
-      ),
+      prevData.map((row) => {
+        if (row.keyPage.ebay_item_id === originalEbayId) {
+          const updatedRow = {
+            ...row,
+            keyPage: {
+              ...row.keyPage,
+              ebay_item_id: updatedData.ebay_item_id,
+              price: updatedData.price,
+              minimum_best_offer: updatedData.minimum_best_offer,
+              last_updated_date: new Date().toLocaleString(),
+            },
+            timestamp: new Date().toLocaleString(),
+          };
+          const { status, message } = computeRowStatusAndMessage(updatedRow);
+          updatedRow.status = status;
+          updatedRow.message = message;
+          return updatedRow;
+        }
+        return row;
+      }),
     );
     setSelectedRows((prev) => prev.filter((id) => id !== originalEbayId));
   };
@@ -100,7 +104,9 @@ const TableView = ({ initialData }: TableViewProps) => {
           };
         }
         updatedRow.timestamp = new Date().toLocaleString();
-        updatedRow.status = "SUCCESS";
+        const { status, message } = computeRowStatusAndMessage(updatedRow);
+        updatedRow.status = status;
+        updatedRow.message = message;
         return updatedRow;
       }),
     );
@@ -125,16 +131,17 @@ const TableView = ({ initialData }: TableViewProps) => {
     setData((prevData) =>
       prevData.map((row) => {
         const updatedRow = { ...row };
-        const pages = [row.page01, row.page02, row.page03].filter(
-          (page): page is TrackingPageData => !!page,
-        );
-        const filteredPages = pages.filter(
-          (page) => page.ebay_item_id !== ebay_item_id,
-        );
-        updatedRow.page01 = filteredPages[0] || undefined;
-        updatedRow.page02 = filteredPages[1] || undefined;
-        updatedRow.page03 = filteredPages[2] || undefined;
+        if (row.page01?.ebay_item_id === ebay_item_id) {
+          updatedRow.page01 = undefined;
+        } else if (row.page02?.ebay_item_id === ebay_item_id) {
+          updatedRow.page02 = undefined;
+        } else if (row.page03?.ebay_item_id === ebay_item_id) {
+          updatedRow.page03 = undefined;
+        }
         updatedRow.timestamp = new Date().toLocaleString();
+        const { status, message } = computeRowStatusAndMessage(updatedRow);
+        updatedRow.status = status;
+        updatedRow.message = message;
         return updatedRow;
       }),
     );
@@ -146,16 +153,20 @@ const TableView = ({ initialData }: TableViewProps) => {
     newTrackingPage: TrackingPageData,
   ) => {
     setData((prevData) =>
-      prevData.map((row) =>
-        row.keyPage.ebay_item_id === keyPageEbayId
-          ? {
-              ...row,
-              [position]: newTrackingPage,
-              timestamp: new Date().toLocaleString(),
-              status: "SUCCESS",
-            }
-          : row,
-      ),
+      prevData.map((row) => {
+        if (row.keyPage.ebay_item_id === keyPageEbayId) {
+          const updatedRow = {
+            ...row,
+            [position]: newTrackingPage,
+            timestamp: new Date().toLocaleString(),
+          };
+          const { status, message } = computeRowStatusAndMessage(updatedRow);
+          updatedRow.status = status;
+          updatedRow.message = message;
+          return updatedRow;
+        }
+        return row;
+      }),
     );
   };
 
@@ -196,7 +207,7 @@ const TableView = ({ initialData }: TableViewProps) => {
       />
       <div className="flex-1 overflow-x-auto overflow-y-auto mt-20">
         <p className="mb-3">
-          <span className="font-bold">Total number of rows:</span>  {" "}
+          <span className="font-bold">Total number of rows:</span>{" "}
           {initialData.length}
         </p>
         <Table
@@ -237,22 +248,22 @@ const TableView = ({ initialData }: TableViewProps) => {
                   }}
                 />
               </TableHead>
-              <TableHead className="text-white border border-gray-300 p-2">
+              <TableHead className="text-white text-center border border-gray-300 p-2">
                 Status
               </TableHead>
-              <TableHead className="text-white border border-gray-300 p-2">
+              <TableHead className="text-white text-center border border-gray-300 p-2">
                 Message
               </TableHead>
-              <TableHead className="text-white border border-gray-300 p-2">
+              <TableHead className="text-white text-center border border-gray-300 p-2">
                 Key Page
               </TableHead>
-              <TableHead className="text-white border border-gray-300 p-2">
+              <TableHead className="text-white text-center border border-gray-300 p-2">
                 Page 01
               </TableHead>
-              <TableHead className="text-white border border-gray-300 p-2">
+              <TableHead className="text-white text-center border border-gray-300 p-2">
                 Page 02
               </TableHead>
-              <TableHead className="text-white border border-gray-300 p-2">
+              <TableHead className="text-white text-center border border-gray-300 p-2">
                 Page 03
               </TableHead>
             </TableRow>
@@ -293,7 +304,7 @@ const TableView = ({ initialData }: TableViewProps) => {
                         className={`inline-block px-4 py-2 rounded text-center ${
                           row.status === "SUCCESS"
                             ? "bg-green-500 text-white font-semibold"
-                            : "bg-red-100 text-red-700"
+                            : "bg-red-600 text-white"
                         }`}
                       >
                         {row.status}
@@ -303,10 +314,8 @@ const TableView = ({ initialData }: TableViewProps) => {
                       </span>
                     </div>
                   </TableCell>
-                  <TableCell className="border border-gray-300 p-2 align-middle text-center">
-                    <div className="flex justify-center items-center h-full">
-                      {row.message}
-                    </div>
+                  <TableCell className="border border-gray-300 p-2 align-middle text-center whitespace-pre">
+                    {row.message}
                   </TableCell>
                   <TableCell className="border border-gray-300 p-2 align-top min-w-[650px]">
                     <KeyPageCard
@@ -333,7 +342,7 @@ const TableView = ({ initialData }: TableViewProps) => {
                           handleRowChange(row.keyPage.ebay_item_id, hasChanges)
                         }
                       />
-                    ) : row.keyPage.key_page_id !== undefined ? ( // Check if key_page_id exists
+                    ) : row.keyPage.key_page_id !== undefined ? (
                       <AddTrackingPageModal
                         keyPageId={row.keyPage.key_page_id}
                         onAddSuccess={(newTrackingPage) =>
@@ -346,7 +355,7 @@ const TableView = ({ initialData }: TableViewProps) => {
                         position="page01"
                       />
                     ) : (
-                      <div>No Key Page ID available</div> // Fallback if key_page_id is missing
+                      <div>No Key Page ID available</div>
                     )}
                   </TableCell>
                   <TableCell className="border border-gray-300 p-2 align-top min-w-[650px]">
@@ -469,5 +478,57 @@ const TableView = ({ initialData }: TableViewProps) => {
     </div>
   );
 };
+
+// Duplicate the computeRowStatusAndMessage function here for client-side updates
+function computeRowStatusAndMessage(row: TableRowData): {
+  status: "SUCCESS" | "FAILED";
+  message: string;
+} {
+  const components = [
+    {
+      name: "Key Page",
+      status: row.keyPage.status,
+      message: row.keyPage.message,
+    },
+    ...(row.page01
+      ? [
+          {
+            name: "Page 01",
+            status: row.page01.status,
+            message: row.page01.message,
+          },
+        ]
+      : []),
+    ...(row.page02
+      ? [
+          {
+            name: "Page 02",
+            status: row.page02.status,
+            message: row.page02.message,
+          },
+        ]
+      : []),
+    ...(row.page03
+      ? [
+          {
+            name: "Page 03",
+            status: row.page03.status,
+            message: row.page03.message,
+          },
+        ]
+      : []),
+  ];
+
+  const failedComponents = components.filter((c) => c.status === "FAILED");
+  if (failedComponents.length > 0) {
+    return {
+      status: "FAILED",
+      message: failedComponents
+        .map((c) => `${c.name}: ${c.message}`)
+        .join("\n"),
+    };
+  }
+  return { status: "SUCCESS", message: "Successfully Updated" };
+}
 
 export default TableView;

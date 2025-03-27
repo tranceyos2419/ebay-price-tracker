@@ -30,18 +30,15 @@ const AddTrackingPageModal = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<{
     ebay_item_id: string;
-    price: number | undefined;
   }>({
     ebay_item_id: "",
-    price: undefined,
   });
   const [errors, setErrors] = useState<{
     ebay_item_id?: string;
-    price?: string;
   }>({});
 
   const validateForm = (): boolean => {
-    const newErrors: { ebay_item_id?: string; price?: string } = {};
+    const newErrors: { ebay_item_id?: string } = {};
 
     if (!formData.ebay_item_id.trim()) {
       newErrors.ebay_item_id = "eBay Item ID is required";
@@ -50,13 +47,6 @@ const AddTrackingPageModal = ({
       !/^\d+$/.test(formData.ebay_item_id)
     ) {
       newErrors.ebay_item_id = "eBay Item ID must be a 12-digit number";
-    }
-
-    if (
-      formData.price !== undefined &&
-      (isNaN(formData.price) || formData.price < 0)
-    ) {
-      newErrors.price = "Price must be a valid positive number";
     }
 
     setErrors(newErrors);
@@ -73,13 +63,12 @@ const AddTrackingPageModal = ({
     try {
       const result = await onAddTrackingPage(keyPageId, {
         ebay_item_id: formData.ebay_item_id,
-        price: formData.price ?? 0,
       });
 
       if (result.success && result.newTrackingPage) {
         onAddSuccess(result.newTrackingPage);
         setOpen(false);
-        setFormData({ ebay_item_id: "", price: undefined });
+        setFormData({ ebay_item_id: "" });
         setErrors({});
         toast.success("Tracking Page added successfully");
       } else {
@@ -123,29 +112,6 @@ const AddTrackingPageModal = ({
             />
             {errors.ebay_item_id && (
               <p className="mt-1 text-sm text-red-500">{errors.ebay_item_id}</p>
-            )}
-          </div>
-          <div>
-            <label className="block text-sm font-medium">Price</label>
-            <Input
-              type="number"
-              value={formData.price ?? ""}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  price: e.target.value
-                    ? parseFloat(e.target.value)
-                    : undefined,
-                })
-              }
-              placeholder="Ex: 140.99"
-              className="mt-2"
-              step="0.01"
-              min="0"
-              disabled={isSubmitting}
-            />
-            {errors.price && (
-              <p className="mt-1 text-sm text-red-500">{errors.price}</p>
             )}
           </div>
           <Button

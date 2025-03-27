@@ -6,14 +6,13 @@ import { StatusButtons } from "@/components/StatusButtons";
 import toast from "react-hot-toast";
 import { onUpdateTrackingPage, onDeleteTrackingPage } from "@/actions/dashoard";
 import ConfirmationModal from "./ConfirmationModal";
-import Spinner from "@/components/ui/Spinner";
 
 interface TrackingPageCardProps {
   ebay_item_id: string;
   price: number;
   image_url: string;
   store_name: string;
-  status: string;
+  status: "SUCCESS" | "FAILED";
   message?: string;
   last_updated_date: string;
   onUpdate: (originalEbayId: string, data: { ebay_item_id: string }) => void;
@@ -26,7 +25,7 @@ const TrackingPageCard = ({
   price,
   image_url,
   store_name,
-  message,
+  status,
   onUpdate,
   onDelete,
   onChange,
@@ -66,10 +65,7 @@ const TrackingPageCard = ({
 
     setIsUpdating(true);
     try {
-      const updatedData = {
-        ebay_item_id: editableItemId,
-      };
-
+      const updatedData = { ebay_item_id: editableItemId };
       const result = await onUpdateTrackingPage(ebay_item_id, updatedData);
       if (result.success) {
         onUpdate(ebay_item_id, updatedData);
@@ -106,11 +102,6 @@ const TrackingPageCard = ({
         className="flex items-start justify-between p-2 bg-gray-100 rounded-lg shadow-md w-full max-w-[650px] my-1 relative"
         data-ebay-id={ebay_item_id}
       >
-        {isUpdating && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-200 bg-opacity-50 rounded-lg">
-            <Spinner />
-          </div>
-        )}
         <div className="flex-shrink-0 border border-gray-300 rounded-md p-1 h-[120px]">
           <Image
             src={image_url}
@@ -125,7 +116,7 @@ const TrackingPageCard = ({
           <div className="flex items-start gap-2">
             <div className="flex items-center gap-1">
               <span className="font-bold text-center">$</span>
-              <p className="text-sm font-semibold text-gray-600 border border-gray-300 rounded-md p-1 w-20">
+              <p className="text-[16px] font-semibold text-gray-600 p-1 w-20">
                 {price.toFixed(2)}
               </p>
             </div>
@@ -137,11 +128,9 @@ const TrackingPageCard = ({
               disabled={isUpdating}
             />
           </div>
-          {message && (
-            <p className="text-sm font-bold text-gray-500 mt-5 truncate">
-              {message}
-            </p>
-          )}
+          <p className="text-sm font-bold text-gray-500 mt-5 truncate">
+            {store_name}
+          </p>
         </div>
 
         <div className="flex-shrink-0 p-1">
@@ -150,6 +139,7 @@ const TrackingPageCard = ({
             onDelete={handleDelete}
             onUpdate={handleUpdate}
             isLoading={isUpdating}
+            status={status}
           />
         </div>
       </div>

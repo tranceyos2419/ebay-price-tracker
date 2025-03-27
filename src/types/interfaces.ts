@@ -57,3 +57,42 @@ export interface TableRowData {
   page02?: TrackingPageData;
   page03?: TrackingPageData;
 }
+
+export interface Price {
+  value: string;
+  currency: string;
+}
+
+export interface Image {
+  imageUrl: string;
+  width: number;
+  height: number;
+}
+
+export interface Seller {
+  username: string;
+  feedbackPercentage: string;
+  feedbackScore: number;
+  store_name?: string;
+}
+
+export interface EbayItemResponse {
+  itemId: string;
+  sellerItemRevision?: string;
+  title: string;
+  shortDescription?: string;
+  price: Price;
+  minimum_best_offer?: number;
+  image: Image;
+  seller: Seller;
+  buyingOptions: string[];
+  description?: string;
+  legacyItemId?: string;
+}
+
+export interface EbayApiErrorResponse {
+  errors?: Array<{
+    message?: string;
+    longMessage?: string;
+  }>;
+}

@@ -2,25 +2,82 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { Prisma } from "@prisma/client";
 import {
   AddRecordData,
   TrackingPageData,
   TableRowData,
 } from "@/types/interfaces";
-import { Prisma } from "@prisma/client";
+import { fetchEbayItemData } from "@/lib/ebay";
 
 async function checkEbayItemIdUniqueness(
   ebay_item_id: string,
   excludeId?: string,
 ): Promise<boolean> {
-  const keyPage = await prisma.keyPage.findUnique({ where: { ebay_item_id } });
-  const trackingPage = await prisma.trackingPage.findUnique({
-    where: { ebay_item_id },
-  });
-  return (
-    !(keyPage && keyPage.ebay_item_id !== excludeId) &&
-    !(trackingPage && trackingPage.ebay_item_id !== excludeId)
-  );
+  try {
+    const [keyPage, trackingPage] = await prisma.$transaction([
+      prisma.keyPage.findUnique({ where: { ebay_item_id } }),
+      prisma.trackingPage.findUnique({ where: { ebay_item_id } }),
+    ]);
+    return (
+      !(keyPage && keyPage.ebay_item_id !== excludeId) &&
+      !(trackingPage && trackingPage.ebay_item_id !== excludeId)
+    );
+  } catch (error) {
+    console.error("Error checking uniqueness:", error);
+    throw error;
+  }
+}
+
+function computeRowStatusAndMessage(row: TableRowData): {
+  status: "SUCCESS" | "FAILED";
+  message: string;
+} {
+  const components = [
+    {
+      name: "Key Page",
+      status: row.keyPage.status,
+      message: row.keyPage.message,
+    },
+    ...(row.page01
+      ? [
+          {
+            name: "Page 01",
+            status: row.page01.status,
+            message: row.page01.message,
+          },
+        ]
+      : []),
+    ...(row.page02
+      ? [
+          {
+            name: "Page 02",
+            status: row.page02.status,
+            message: row.page02.message,
+          },
+        ]
+      : []),
+    ...(row.page03
+      ? [
+          {
+            name: "Page 03",
+            status: row.page03.status,
+            message: row.page03.message,
+          },
+        ]
+      : []),
+  ];
+
+  const failedComponents = components.filter((c) => c.status === "FAILED");
+  if (failedComponents.length > 0) {
+    return {
+      status: "FAILED",
+      message: failedComponents
+        .map((c) => `${c.name}: ${c.message}`)
+        .join("\n"),
+    };
+  }
+  return { status: "SUCCESS", message: "Successfully Updated" };
 }
 
 export const onFetchRecords = async (): Promise<{
@@ -42,14 +99,14 @@ export const onFetchRecords = async (): Promise<{
           price: page.price,
           image_url: page.image_url,
           store_name: page.store_name,
-          status: page.status,
+          status: page.status as "SUCCESS" | "FAILED",
           message: page.message || "",
           last_updated_date: page.last_updated_date.toLocaleString(),
         }));
 
-      return {
-        status: "SUCCESS",
-        message: "Successfully Updated",
+      const row: TableRowData = {
+        status: "SUCCESS", // Will be updated below
+        message: "Successfully Updated", // Will be updated below
         timestamp: keyPage.last_updated_date.toLocaleString(),
         keyPage: {
           key_page_id: keyPage.key_page_id,
@@ -58,14 +115,20 @@ export const onFetchRecords = async (): Promise<{
           minimum_best_offer: keyPage.minimum_best_offer,
           image_url: keyPage.image_url,
           title: keyPage.title,
-          status: keyPage.status,
+          status: keyPage.status as "SUCCESS" | "FAILED",
           message: keyPage.message || undefined,
           last_updated_date: keyPage.last_updated_date.toLocaleString(),
         },
-        page01: page01 || undefined,
-        page02: page02 || undefined,
-        page03: page03 || undefined,
+        page01,
+        page02,
+        page03,
       };
+
+      const { status, message } = computeRowStatusAndMessage(row);
+      row.status = status;
+      row.message = message;
+
+      return row;
     });
 
     return { initialData };
@@ -95,145 +158,115 @@ export const onAddRecord = async (
       }
     }
 
-    const keyPage = await prisma.keyPage.create({
-      data: {
-        ebay_item_id: data.key_page_ebay_item_id,
-        price: data.price || 0,
-        minimum_best_offer: data.minimum_best_offer || 0,
-        image_url:
-          "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=1471&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-        title: "New Item",
-        status: "SUCCESS",
-        message: "Key Page Added",
-        last_updated_date: new Date(),
-      },
+    const keyPageEbayResult = await fetchEbayItemData(
+      data.key_page_ebay_item_id,
+    );
+    const trackingPageResults = await Promise.all(
+      [data.page_01, data.page_02, data.page_03]
+        .filter(Boolean)
+        .map((id) => fetchEbayItemData(id!)),
+    );
+
+    const result = await prisma.$transaction(async (tx) => {
+      // Key Page
+      const keyPage = await tx.keyPage.create({
+        data: {
+          ebay_item_id: data.key_page_ebay_item_id,
+          price: keyPageEbayResult.success ? keyPageEbayResult.data!.price : 0,
+          minimum_best_offer: keyPageEbayResult.success
+            ? data.minimum_best_offer ||
+              (keyPageEbayResult.data!.minimum_best_offer ?? 0)
+            : 0,
+          image_url: keyPageEbayResult.success
+            ? keyPageEbayResult.data!.image_url
+            : "",
+          title: keyPageEbayResult.success
+            ? keyPageEbayResult.data!.title
+            : "Unknown",
+          status: keyPageEbayResult.success ? "SUCCESS" : "FAILED",
+          message: keyPageEbayResult.success
+            ? "Successfully Updated"
+            : keyPageEbayResult.error || "Failed to fetch key page data",
+          last_updated_date: new Date(),
+        },
+      });
+
+      await tx.item.create({
+        data: { key_page_id: keyPage.key_page_id },
+      });
+
+      // Tracking Pages
+      const trackingPagesData: Prisma.TrackingPageCreateManyInput[] = [];
+      const trackingPages: TrackingPageData[] = [];
+
+      trackingPageResults.forEach((result, index) => {
+        const ebayId = [data.page_01, data.page_02, data.page_03][index];
+        if (ebayId) {
+          const pageData: Prisma.TrackingPageCreateManyInput = {
+            ebay_item_id: ebayId,
+            price: result.success ? result.data!.price : 0,
+            image_url: result.success ? result.data!.image_url : "",
+            store_name: result.success
+              ? result.data!.store_name || `Tracking Store ${index + 1}`
+              : `Tracking Store ${index + 1}`,
+            status: result.success ? "SUCCESS" : "FAILED",
+            message: result.success
+              ? "Successfully Updated"
+              : result.error || "Failed to fetch tracking page data",
+            last_updated_date: new Date(),
+            key_page_id: keyPage.key_page_id,
+          };
+          trackingPagesData.push(pageData);
+          trackingPages.push({
+            ...pageData,
+            status: pageData.status as "SUCCESS" | "FAILED",
+            last_updated_date: pageData.last_updated_date.toLocaleString(),
+          });
+        }
+      });
+
+      if (trackingPagesData.length > 0) {
+        await tx.trackingPage.createMany({ data: trackingPagesData });
+      }
+
+      const newRow: TableRowData = {
+        status: "SUCCESS", // Will be updated below
+        message: "New Item Added", // Will be updated below
+        timestamp: new Date().toLocaleString(),
+        keyPage: {
+          key_page_id: keyPage.key_page_id,
+          ebay_item_id: keyPage.ebay_item_id,
+          price: keyPage.price,
+          minimum_best_offer: keyPage.minimum_best_offer,
+          image_url: keyPage.image_url,
+          title: keyPage.title,
+          status: keyPage.status as "SUCCESS" | "FAILED",
+          message: keyPage.message,
+          last_updated_date: keyPage.last_updated_date.toLocaleString(),
+        },
+        page01: trackingPages[0],
+        page02: trackingPages[1],
+        page03: trackingPages[2],
+      };
+
+      const { status, message } = computeRowStatusAndMessage(newRow);
+      newRow.status = status;
+      newRow.message = message;
+
+      return newRow;
     });
-
-    await prisma.item.create({
-      data: { key_page_id: keyPage.key_page_id },
-    });
-
-    const trackingPagesData: Prisma.TrackingPageCreateManyInput[] = [];
-    const placeholderPrefix = `${keyPage.key_page_id}-placeholder`;
-
-    if (data.page_01) {
-      trackingPagesData.push({
-        ebay_item_id: data.page_01,
-        price: data.price || 0,
-        image_url:
-          "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=1471&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-        store_name: "Tracking Store 01",
-        status: "SUCCESS",
-        message: "Tracking Page 01",
-        last_updated_date: new Date(),
-        key_page_id: keyPage.key_page_id,
-      });
-    } else {
-      trackingPagesData.push({
-        ebay_item_id: `${placeholderPrefix}-01`,
-        price: 0,
-        image_url: "/file.svg",
-        store_name: "Empty Store",
-        status: "FAILED",
-        message: "No Tracking Page",
-        last_updated_date: new Date(),
-        key_page_id: keyPage.key_page_id,
-      });
-    }
-
-    if (data.page_02) {
-      trackingPagesData.push({
-        ebay_item_id: data.page_02,
-        price: data.price || 0,
-        image_url:
-          "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=1471&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-        store_name: "Tracking Store 02",
-        status: "SUCCESS",
-        message: "Tracking Page 02",
-        last_updated_date: new Date(),
-        key_page_id: keyPage.key_page_id,
-      });
-    } else {
-      trackingPagesData.push({
-        ebay_item_id: `${placeholderPrefix}-02`,
-        price: 0,
-        image_url: "/file.svg",
-        store_name: "Empty Store",
-        status: "FAILED",
-        message: "No Tracking Page",
-        last_updated_date: new Date(),
-        key_page_id: keyPage.key_page_id,
-      });
-    }
-
-    if (data.page_03) {
-      trackingPagesData.push({
-        ebay_item_id: data.page_03,
-        price: data.price || 0,
-        image_url:
-          "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=1471&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-        store_name: "Tracking Store 03",
-        status: "SUCCESS",
-        message: "Tracking Page 03",
-        last_updated_date: new Date(),
-        key_page_id: keyPage.key_page_id,
-      });
-    } else {
-      trackingPagesData.push({
-        ebay_item_id: `${placeholderPrefix}-03`,
-        price: 0,
-        image_url: "/file.svg",
-        store_name: "Empty Store",
-        status: "FAILED",
-        message: "No Tracking Page",
-        last_updated_date: new Date(),
-        key_page_id: keyPage.key_page_id,
-      });
-    }
-
-    let trackingPages: TrackingPageData[] = [];
-    if (trackingPagesData.length > 0) {
-      const createdPages = await prisma.trackingPage.createManyAndReturn({
-        data: trackingPagesData,
-      });
-
-      trackingPages = createdPages.map((page) => ({
-        key_page_id: page.key_page_id,
-        ebay_item_id: page.ebay_item_id,
-        price: page.price,
-        image_url: page.image_url,
-        store_name: page.store_name,
-        status: page.status,
-        message: page.message || "",
-        last_updated_date: page.last_updated_date.toLocaleString(),
-      }));
-    }
-
-    const newRow: TableRowData = {
-      status: "SUCCESS",
-      message: "New Item Added",
-      timestamp: new Date().toLocaleString(),
-      keyPage: {
-        key_page_id: keyPage.key_page_id,
-        ebay_item_id: keyPage.ebay_item_id,
-        price: keyPage.price,
-        minimum_best_offer: keyPage.minimum_best_offer,
-        image_url: keyPage.image_url,
-        title: keyPage.title,
-        status: keyPage.status,
-        message: keyPage.message,
-        last_updated_date: keyPage.last_updated_date.toLocaleString(),
-      },
-      page01: trackingPages[0],
-      page02: trackingPages[1],
-      page03: trackingPages[2],
-    };
 
     revalidatePath("/dashboard");
-    return { success: true, message: "Record added successfully", newRow };
+    return {
+      success: true,
+      message: "Record added successfully",
+      newRow: result,
+    };
   } catch (error) {
     console.error("Error adding record:", error);
-    return { success: false, message: "Failed to add record" };
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    return { success: false, message: `Failed to add record: ${errorMessage}` };
   }
 };
 
@@ -252,21 +285,50 @@ export const onUpdateKeyPage = async (
       };
     }
 
+    const ebayResult = await fetchEbayItemData(data.ebay_item_id);
+    const existingKeyPage = await prisma.keyPage.findUnique({
+      where: { ebay_item_id },
+    });
+
+    if (!existingKeyPage) {
+      return { success: false, message: "Key Page not found" };
+    }
+
+    const updatedData = ebayResult.success
+      ? {
+          ebay_item_id: data.ebay_item_id,
+          price: data.price || ebayResult.data!.price,
+          minimum_best_offer:
+            data.minimum_best_offer ||
+            (ebayResult.data!.minimum_best_offer ?? 0),
+          image_url: ebayResult.data!.image_url,
+          title: ebayResult.data!.title,
+          status: "SUCCESS" as const,
+          message: "Successfully Updated",
+          last_updated_date: new Date(),
+        }
+      : {
+          ebay_item_id: data.ebay_item_id,
+          status: "FAILED" as const,
+          message: ebayResult.error || "Failed to fetch key page data",
+          last_updated_date: new Date(),
+        };
+
     await prisma.keyPage.update({
       where: { ebay_item_id },
-      data: {
-        ebay_item_id: data.ebay_item_id,
-        price: data.price,
-        minimum_best_offer: data.minimum_best_offer,
-        status: "SUCCESS",
-        last_updated_date: new Date(),
-      },
+      data: updatedData,
     });
+
     revalidatePath("/dashboard");
-    return { success: true, message: "Key Page updated successfully" };
+    return { success: ebayResult.success, message: updatedData.message };
   } catch (error) {
     console.error("Error updating key page:", error);
-    return { success: false, message: "Failed to update key page" };
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    return {
+      success: false,
+      message: `Failed to update key page: ${errorMessage}`,
+    };
   }
 };
 
@@ -284,50 +346,48 @@ export const onUpdateTrackingPage = async (
       }
     }
 
-    const isPlaceholder = originalEbayId.includes("-placeholder-");
-    if (isPlaceholder) {
-      const placeholderRecord = await prisma.trackingPage.findUnique({
-        where: { ebay_item_id: originalEbayId },
-        select: { key_page_id: true },
-      });
+    const ebayResult = await fetchEbayItemData(data.ebay_item_id);
+    const existingTrackingPage = await prisma.trackingPage.findUnique({
+      where: { ebay_item_id: originalEbayId },
+    });
 
-      if (!placeholderRecord) {
-        return { success: false, message: "Placeholder record not found" };
-      }
-
-      await prisma.trackingPage.delete({
-        where: { ebay_item_id: originalEbayId },
-      });
-
-      await prisma.trackingPage.create({
-        data: {
-          ebay_item_id: data.ebay_item_id,
-          price: 0,
-          image_url:
-            "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=1471&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-          store_name: "Tracking Store",
-          status: "SUCCESS",
-          message: "Tracking Page Created",
-          last_updated_date: new Date(),
-          key_page_id: placeholderRecord.key_page_id,
-        },
-      });
-    } else {
-      await prisma.trackingPage.update({
-        where: { ebay_item_id: originalEbayId },
-        data: {
-          ebay_item_id: data.ebay_item_id,
-          status: "SUCCESS",
-          last_updated_date: new Date(),
-        },
-      });
+    if (!existingTrackingPage) {
+      return { success: false, message: "Tracking Page not found" };
     }
 
+    const updatedData = ebayResult.success
+      ? {
+          ebay_item_id: data.ebay_item_id,
+          price: ebayResult.data!.price,
+          image_url: ebayResult.data!.image_url,
+          store_name:
+            ebayResult.data!.store_name || existingTrackingPage.store_name,
+          status: "SUCCESS" as const,
+          message: "Successfully Updated",
+          last_updated_date: new Date(),
+        }
+      : {
+          ebay_item_id: data.ebay_item_id,
+          status: "FAILED" as const,
+          message: ebayResult.error || "Failed to fetch tracking page data",
+          last_updated_date: new Date(),
+        };
+
+    await prisma.trackingPage.update({
+      where: { ebay_item_id: originalEbayId },
+      data: updatedData,
+    });
+
     revalidatePath("/dashboard");
-    return { success: true, message: "Tracking page updated successfully" };
+    return { success: ebayResult.success, message: updatedData.message };
   } catch (error) {
     console.error("Error updating tracking page:", error);
-    return { success: false, message: "Failed to update tracking page" };
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    return {
+      success: false,
+      message: `Failed to update tracking page: ${errorMessage}`,
+    };
   }
 };
 
@@ -342,21 +402,24 @@ export const onDeleteKeyPage = async (
       return { success: false, message: "Key Page not found" };
     }
 
-    await prisma.trackingPage.deleteMany({
-      where: { key_page_id: keyPage.key_page_id },
-    });
-    await prisma.item.deleteMany({
-      where: { key_page_id: keyPage.key_page_id },
-    });
-    await prisma.keyPage.delete({
-      where: { ebay_item_id },
-    });
+    await prisma.$transaction([
+      prisma.trackingPage.deleteMany({
+        where: { key_page_id: keyPage.key_page_id },
+      }),
+      prisma.item.deleteMany({ where: { key_page_id: keyPage.key_page_id } }),
+      prisma.keyPage.delete({ where: { ebay_item_id } }),
+    ]);
 
     revalidatePath("/dashboard");
     return { success: true, message: "Key Page and associated data deleted" };
   } catch (error) {
     console.error("Error deleting key page:", error);
-    return { success: false, message: "Failed to delete key page" };
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    return {
+      success: false,
+      message: `Failed to delete key page: ${errorMessage}`,
+    };
   }
 };
 
@@ -376,16 +439,21 @@ export const onDeleteTrackingPage = async (
     });
 
     revalidatePath("/dashboard");
-    return { success: true, message: "Tracking Page deleted and reordered" };
+    return { success: true, message: "Tracking Page deleted" };
   } catch (error) {
     console.error("Error deleting tracking page:", error);
-    return { success: false, message: "Failed to delete tracking page" };
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    return {
+      success: false,
+      message: `Failed to delete tracking page: ${errorMessage}`,
+    };
   }
 };
 
 export const onAddTrackingPage = async (
   keyPageId: number,
-  data: { ebay_item_id: string; price: number },
+  data: { ebay_item_id: string },
 ): Promise<{
   success: boolean;
   message: string;
@@ -406,15 +474,22 @@ export const onAddTrackingPage = async (
       return { success: false, message: "Key Page not found" };
     }
 
+    const ebayResult = await fetchEbayItemData(data.ebay_item_id);
+    const status = ebayResult.success ? "SUCCESS" : "FAILED";
+    const message = ebayResult.success
+      ? "Successfully Updated"
+      : ebayResult.error || "Failed to fetch tracking page data";
+
     const newTrackingPage = await prisma.trackingPage.create({
       data: {
         ebay_item_id: data.ebay_item_id,
-        price: data.price,
-        image_url:
-          "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=1471&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-        store_name: "Tracking Store",
-        status: "SUCCESS",
-        message: "Tracking Page Added",
+        price: ebayResult.success ? ebayResult.data!.price : 0,
+        image_url: ebayResult.success ? ebayResult.data!.image_url : "",
+        store_name: ebayResult.success
+          ? ebayResult.data!.store_name || "Tracking Store"
+          : "Tracking Store",
+        status,
+        message,
         last_updated_date: new Date(),
         key_page_id: keyPageId,
       },
@@ -426,19 +501,24 @@ export const onAddTrackingPage = async (
       price: newTrackingPage.price,
       image_url: newTrackingPage.image_url,
       store_name: newTrackingPage.store_name,
-      status: newTrackingPage.status,
+      status: newTrackingPage.status as "SUCCESS" | "FAILED",
       message: newTrackingPage.message || "",
       last_updated_date: newTrackingPage.last_updated_date.toLocaleString(),
     };
 
     revalidatePath("/dashboard");
     return {
-      success: true,
-      message: "Tracking Page added successfully",
+      success: ebayResult.success,
+      message,
       newTrackingPage: trackingPageData,
     };
   } catch (error) {
     console.error("Error adding tracking page:", error);
-    return { success: false, message: "Failed to add tracking page" };
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    return {
+      success: false,
+      message: `Failed to add tracking page: ${errorMessage}`,
+    };
   }
 };
