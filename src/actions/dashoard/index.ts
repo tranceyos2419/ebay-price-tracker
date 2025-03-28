@@ -8,7 +8,8 @@ import {
   TrackingPageData,
   TableRowData,
 } from "@/types/interfaces";
-import { fetchEbayItemData } from "@/lib/ebay";
+import { fetchEbayItemData, exchangeCodeForTokens } from "@/lib/ebay";
+import { redirect } from "next/navigation";
 
 async function checkEbayItemIdUniqueness(
   ebay_item_id: string,
@@ -79,6 +80,32 @@ function computeRowStatusAndMessage(row: TableRowData): {
   }
   return { status: "SUCCESS", message: "Successfully Updated" };
 }
+
+export const initiateOAuthFlow = async () => {
+  const CLIENT_ID = process.env.EBAY_CLIENT_ID!;
+  const REDIRECT_URI = process.env.EBAY_REDIRECT_URI!;
+  const SCOPES =
+    "https://api.ebay.com/oauth/api_scope https://api.ebay.com/oauth/api_scope/sell.inventory";
+
+  const authUrl = `https://auth.ebay.com/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&scope=${encodeURIComponent(SCOPES)}`;
+  redirect(authUrl);
+};
+
+export const handleOAuthCallback = async (code: string) => {
+  try {
+    await exchangeCodeForTokens(code);
+    revalidatePath("/dashboard");
+    redirect("/dashboard");
+  } catch (error) {
+    console.error("OAuth callback error:", error);
+    return { success: false, message: "Failed to process OAuth callback" };
+  }
+};
+
+export const isAuthenticated = async (): Promise<boolean> => {
+  const tokenRecord = await prisma.userToken.findFirst();
+  return !!tokenRecord && tokenRecord.expires_at > new Date();
+};
 
 export const onFetchRecords = async (): Promise<{
   initialData: TableRowData[];
@@ -161,6 +188,7 @@ export const onAddRecord = async (
     const keyPageEbayResult = await fetchEbayItemData(
       data.key_page_ebay_item_id,
     );
+
     const trackingPageResults = await Promise.all(
       [data.page_01, data.page_02, data.page_03]
         .filter(Boolean)

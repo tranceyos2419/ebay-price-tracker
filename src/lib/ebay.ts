@@ -1,4 +1,5 @@
 import axios from "axios";
+import { prisma } from "@/lib/prisma";
 import { EbayApiErrorResponse, EbayItemResponse } from "@/types/interfaces";
 
 const ebayApi = axios.create({
@@ -11,22 +12,18 @@ const ebayApi = axios.create({
 
 const MAX_RETRIES = 3;
 const BASE_DELAY = 1000;
+const CLIENT_ID = process.env.EBAY_CLIENT_ID!;
+const CLIENT_SECRET = process.env.EBAY_CLIENT_SECRET!;
+const REDIRECT_URI = process.env.EBAY_REDIRECT_URI!;
 
 let cachedToken: string | null = null;
 let tokenExpiration: number | null = null;
 
-async function getOAuthToken(): Promise<string> {
-  if (cachedToken && tokenExpiration && Date.now() < tokenExpiration - 60000) {
-    return cachedToken;
-  }
-
-  const CLIENT_ID = process.env.EBAY_CLIENT_ID!;
-  const CLIENT_SECRET = process.env.EBAY_CLIENT_SECRET!;
-
+async function refreshAccessToken(refreshToken: string): Promise<string> {
   try {
     const response = await axios.post(
       "https://api.ebay.com/identity/v1/oauth2/token",
-      "grant_type=client_credentials&scope=https://api.ebay.com/oauth/api_scope",
+      `grant_type=refresh_token&refresh_token=${encodeURIComponent(refreshToken)}`,
       {
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
@@ -38,8 +35,58 @@ async function getOAuthToken(): Promise<string> {
     tokenExpiration = Date.now() + response.data.expires_in * 1000;
     return cachedToken!;
   } catch (error) {
-    console.error("Failed to get OAuth token:", error);
-    throw new Error("Authentication failed");
+    console.error("Failed to refresh OAuth token:", error);
+    throw new Error("Token refresh failed");
+  }
+}
+
+async function getOAuthToken(): Promise<string> {
+  if (cachedToken && tokenExpiration && Date.now() < tokenExpiration - 60000) {
+    return cachedToken;
+  }
+
+  const tokenRecord = await prisma.userToken.findFirst({
+    orderBy: { created_at: "desc" },
+  });
+
+  if (!tokenRecord) {
+    throw new Error("No refresh token found. Please authenticate with eBay.");
+  }
+
+  return await refreshAccessToken(tokenRecord.refresh_token);
+}
+
+export async function exchangeCodeForTokens(code: string): Promise<void> {
+  try {
+    const response = await axios.post(
+      "https://api.ebay.com/identity/v1/oauth2/token",
+      `grant_type=authorization_code&code=${encodeURIComponent(code)}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`,
+      {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Authorization: `Basic ${Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString("base64")}`,
+        },
+      },
+    );
+
+    const {
+      access_token,
+      refresh_token,
+      expires_in,
+      refresh_token_expires_in,
+    } = response.data;
+    cachedToken = access_token;
+    tokenExpiration = Date.now() + expires_in * 1000;
+
+    await prisma.userToken.create({
+      data: {
+        refresh_token,
+        expires_at: new Date(Date.now() + refresh_token_expires_in * 1000),
+      },
+    });
+  } catch (error) {
+    console.error("Failed to exchange code for tokens:", error);
+    throw new Error("Failed to obtain OAuth tokens");
   }
 }
 
@@ -78,9 +125,7 @@ export async function fetchEbayItemData(itemId: string): Promise<{
             : undefined,
           image_url: item.image.imageUrl,
           title: item.title,
-          store_name: item.seller.store_name
-            ? item.seller.store_name
-            : item.seller.username,
+          store_name: item.seller.store_name || item.seller.username,
         },
       };
     } catch (error) {
@@ -95,7 +140,7 @@ export async function fetchEbayItemData(itemId: string): Promise<{
           error: errorMessage,
         };
       }
-      const delay = BASE_DELAY * Math.pow(2, attempt - 1); // Exponential backoff
+      const delay = BASE_DELAY * Math.pow(2, attempt - 1);
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
