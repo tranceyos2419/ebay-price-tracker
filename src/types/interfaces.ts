@@ -96,3 +96,13 @@ export interface EbayApiErrorResponse {
     longMessage?: string;
   }>;
 }
+
+export interface Config {
+  IS_SANDBOX: boolean;
+  EBAY_CLIENT_ID: string;
+  EBAY_CLIENT_SECRET: string;
+  EBAY_REDIRECT_URI: string;
+  AUTH_URL: string;
+  TOKEN_URL: string;
+  API_BASE_URL: string;
+}

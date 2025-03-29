@@ -10,6 +10,8 @@ import {
 } from "@/types/interfaces";
 import { fetchEbayItemData, exchangeCodeForTokens } from "@/lib/ebay";
 import { redirect } from "next/navigation";
+import { OAUTH_SCOPES } from "@/constants";
+import { config } from "@/lib/config";
 
 async function checkEbayItemIdUniqueness(
   ebay_item_id: string,
@@ -82,12 +84,7 @@ function computeRowStatusAndMessage(row: TableRowData): {
 }
 
 export const initiateOAuthFlow = async () => {
-  const CLIENT_ID = process.env.EBAY_CLIENT_ID!;
-  const REDIRECT_URI = process.env.EBAY_REDIRECT_URI!;
-  const SCOPES =
-    "https://api.ebay.com/oauth/api_scope https://api.ebay.com/oauth/api_scope/sell.inventory";
-
-  const authUrl = `https://auth.ebay.com/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&scope=${encodeURIComponent(SCOPES)}`;
+  const authUrl = `${config.AUTH_URL}?client_id=${config.EBAY_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(config.EBAY_REDIRECT_URI)}&scope=${encodeURIComponent(OAUTH_SCOPES)}&prompt=login`;
   redirect(authUrl);
 };
 
@@ -95,10 +92,9 @@ export const handleOAuthCallback = async (code: string) => {
   try {
     await exchangeCodeForTokens(code);
     revalidatePath("/dashboard");
-    redirect("/dashboard");
   } catch (error) {
     console.error("OAuth callback error:", error);
-    return { success: false, message: "Failed to process OAuth callback" };
+    throw new Error("Failed to process OAuth callback");
   }
 };
 

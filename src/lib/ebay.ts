@@ -1,9 +1,10 @@
 import axios from "axios";
 import { prisma } from "@/lib/prisma";
 import { EbayApiErrorResponse, EbayItemResponse } from "@/types/interfaces";
+import { config } from "@/lib/config";
 
 const ebayApi = axios.create({
-  baseURL: "https://api.ebay.com/buy/browse/v1",
+  baseURL: config.API_BASE_URL,
   headers: {
     "X-EBAY-C-MARKETPLACE-ID": "EBAY_US",
     Accept: "application/json",
@@ -12,9 +13,6 @@ const ebayApi = axios.create({
 
 const MAX_RETRIES = 3;
 const BASE_DELAY = 1000;
-const CLIENT_ID = process.env.EBAY_CLIENT_ID!;
-const CLIENT_SECRET = process.env.EBAY_CLIENT_SECRET!;
-const REDIRECT_URI = process.env.EBAY_REDIRECT_URI!;
 
 let cachedToken: string | null = null;
 let tokenExpiration: number | null = null;
@@ -22,12 +20,12 @@ let tokenExpiration: number | null = null;
 async function refreshAccessToken(refreshToken: string): Promise<string> {
   try {
     const response = await axios.post(
-      "https://api.ebay.com/identity/v1/oauth2/token",
+      config.TOKEN_URL,
       `grant_type=refresh_token&refresh_token=${encodeURIComponent(refreshToken)}`,
       {
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
-          Authorization: `Basic ${Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString("base64")}`,
+          Authorization: `Basic ${Buffer.from(`${config.EBAY_CLIENT_ID}:${config.EBAY_CLIENT_SECRET}`).toString("base64")}`,
         },
       },
     );
@@ -59,29 +57,28 @@ async function getOAuthToken(): Promise<string> {
 export async function exchangeCodeForTokens(code: string): Promise<void> {
   try {
     const response = await axios.post(
-      "https://api.ebay.com/identity/v1/oauth2/token",
-      `grant_type=authorization_code&code=${encodeURIComponent(code)}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`,
+      config.TOKEN_URL,
+      new URLSearchParams({
+        grant_type: "authorization_code",
+        code,
+        redirect_uri: config.EBAY_REDIRECT_URI,
+      }).toString(),
       {
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
-          Authorization: `Basic ${Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString("base64")}`,
+          Authorization: `Basic ${Buffer.from(`${config.EBAY_CLIENT_ID}:${config.EBAY_CLIENT_SECRET}`).toString("base64")}`,
         },
       },
     );
 
-    const {
-      access_token,
-      refresh_token,
-      expires_in,
-      refresh_token_expires_in,
-    } = response.data;
+    const { access_token, refresh_token, expires_in } = response.data;
     cachedToken = access_token;
     tokenExpiration = Date.now() + expires_in * 1000;
 
     await prisma.userToken.create({
       data: {
         refresh_token,
-        expires_at: new Date(Date.now() + refresh_token_expires_in * 1000),
+        expires_at: new Date(Date.now() + 18 * 30 * 24 * 60 * 60 * 1000), // ~18 months
       },
     });
   } catch (error) {
