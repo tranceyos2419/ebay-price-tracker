@@ -9,26 +9,33 @@ import {
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | undefined };
+  searchParams: Promise<{
+    code?: string;
+    error?: string;
+    [key: string]: string | undefined;
+  }>;
 }) {
-  const code = searchParams.code;
-  if (code) {
-    await handleOAuthCallback(code);
+  const params = await searchParams;
+
+  if (params.code) {
+    await handleOAuthCallback(params.code);
     redirect("/dashboard");
   }
-  const error = searchParams.error;
-  if (error) {
+
+  if (params.error) {
     redirect("/auth-declined");
   }
+
   const authenticated = await isAuthenticated();
   if (!authenticated) {
     redirect("/signin");
   }
+
   const { initialData } = await onFetchRecords();
 
   return (
     <div className="p-4 min-h-screen flex flex-col">
-      <TableView initialData={initialData || []} />
+      <TableView initialData={initialData} />
     </div>
   );
 }
