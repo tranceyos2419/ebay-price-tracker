@@ -143,3 +143,6 @@ export async function fetchEbayItemData(itemId: string): Promise<{
   }
   return { success: false, error: "Unexpected retry failure" };
 }
+(async () => {
+  await fetchEbayItemData("387227674574");
+})();
