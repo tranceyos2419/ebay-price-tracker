@@ -91,7 +91,6 @@ export const initiateOAuthFlow = async () => {
 export const handleOAuthCallback = async (code: string) => {
   try {
     await exchangeCodeForTokens(code);
-    revalidatePath("/dashboard");
   } catch (error) {
     console.error("OAuth callback error:", error);
     throw new Error("Failed to process OAuth callback");
