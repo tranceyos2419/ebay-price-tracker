@@ -23,6 +23,7 @@ export default async function DashboardPage({
   }
 
   if (params.error) {
+    console.log("error from eay", params.error);
     redirect("/auth-declined");
   }
 
