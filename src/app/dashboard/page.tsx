@@ -16,17 +16,14 @@ export default async function DashboardPage({
     await handleOAuthCallback(code);
     redirect("/dashboard");
   }
-
   const error = searchParams.error;
   if (error) {
     redirect("/auth-declined");
   }
-
   const authenticated = await isAuthenticated();
   if (!authenticated) {
     redirect("/signin");
   }
-
   const { initialData } = await onFetchRecords();
 
   return (
