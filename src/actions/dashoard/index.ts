@@ -13,6 +13,14 @@ import { redirect } from "next/navigation";
 import { OAUTH_SCOPES } from "@/constants";
 import { config } from "@/lib/config";
 
+export const onLogout = async () => {
+  try {
+    await prisma.$transaction([prisma.userToken.deleteMany()]);
+  } catch (error) {
+    console.log("error while logging out: ", error);
+  }
+};
+
 async function checkEbayItemIdUniqueness(
   ebay_item_id: string,
   excludeId?: string,

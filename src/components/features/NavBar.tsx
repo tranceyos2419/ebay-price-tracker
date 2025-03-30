@@ -15,13 +15,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useTheme } from "next-themes";
 import { Moon, Sun, LogOut, Home } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { redirect, useRouter } from "next/navigation";
 import ConfirmationModal from "./ConfirmationModal";
 import { useState, useEffect, useRef } from "react";
 import {
   onUpdateKeyPage,
   onUpdateTrackingPage,
   onDeleteKeyPage,
+  onLogout,
 } from "@/actions/dashoard";
 import toast from "react-hot-toast";
 import { TableRowData, TrackingPageData } from "@/types/interfaces";
@@ -219,7 +220,14 @@ const NavBar = ({
     setIsDeleting(false);
     toast.success("Selected rows deleted successfully");
   };
-
+  const handleLogout = async () => {
+    try {
+      await onLogout();
+      redirect("/signin");
+    } catch (error) {
+      console.error("logout failed:", error);
+    }
+  };
   return (
     <>
       <div
@@ -304,7 +312,10 @@ const NavBar = ({
                 </DropdownMenuItem>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="cursor-pointer">
+              <DropdownMenuItem
+                className="cursor-pointer"
+                onClick={handleLogout}
+              >
                 <LogOut className="mr-2 h-4 w-4" />
                 Log out
                 <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
