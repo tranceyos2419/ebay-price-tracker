@@ -127,8 +127,8 @@ export const onFetchRecords = async (): Promise<{
         }));
 
       const row: TableRowData = {
-        status: "SUCCESS", // Will be updated below
-        message: "Successfully Updated", // Will be updated below
+        status: "SUCCESS",
+        message: "Successfully Updated",
         timestamp: keyPage.last_updated_date.toLocaleString(),
         keyPage: {
           key_page_id: keyPage.key_page_id,

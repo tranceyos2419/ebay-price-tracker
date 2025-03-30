@@ -117,9 +117,7 @@ export async function fetchEbayItemData(itemId: string): Promise<{
         success: true,
         data: {
           price: parseFloat(item.price.value),
-          minimum_best_offer: item.buyingOptions.includes("BEST_OFFER")
-            ? parseFloat(item.price.value) * 0.8
-            : undefined,
+          minimum_best_offer: item.minimum_best_offer,
           image_url: item.image.imageUrl,
           title: item.title,
           store_name: item.seller.store_name || item.seller.username,
