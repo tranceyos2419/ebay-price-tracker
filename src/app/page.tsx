@@ -1,17 +1,20 @@
-"use client";
-
+import { isAuthenticated } from "@/actions/dashoard";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const isAuth = await isAuthenticated();
+  const text = isAuth ? "Dashboard" : "Sign in";
+  const link = isAuth ? "/dashboard" : "/signin";
+
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-blue-400 p-4 shadow-md">
         <div className="container mx-auto flex items-center justify-between">
           <div className="text-white text-xl font-bold">Ebay Price Tracker</div>
           <Button className="bg-blue-600 hover:bg-blue-600/90 px-5 h-10">
-            <Link href="/dashboard" className="text-white hover:text-gray-200">
-              Dashboard
+            <Link href={link} className="text-white hover:text-gray-200">
+              {text}
             </Link>
           </Button>
         </div>
@@ -26,10 +29,10 @@ export default function LandingPage() {
         </p>
         <div className="flex justify-center space-x-4">
           <Link
-            href="/dashboard"
+            href={link}
             className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"
           >
-            Dashboard
+            {text}
           </Link>
         </div>
       </div>
