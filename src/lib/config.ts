@@ -36,8 +36,8 @@ function loadConfig(): Config {
       ? "https://api.sandbox.ebay.com/identity/v1/oauth2/token"
       : "https://api.ebay.com/identity/v1/oauth2/token",
     API_BASE_URL: isSandbox
-      ? "https://api.sandbox.ebay.com/buy/browse/v1"
-      : "https://api.ebay.com/buy/browse/v1",
+      ? "https://api.sandbox.ebay.com"
+      : "https://api.ebay.com",
   };
 
   return config;

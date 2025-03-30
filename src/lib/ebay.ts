@@ -71,18 +71,18 @@ export async function exchangeCodeForTokens(code: string): Promise<void> {
       },
     );
 
-    const { access_token, refresh_token, expires_in } = response.data;
+    const { access_token, refresh_token, refresh_token_expires_in } =
+      response.data;
     cachedToken = access_token;
-    tokenExpiration = Date.now() + expires_in * 1000;
 
     await prisma.userToken.create({
       data: {
         refresh_token,
-        expires_at: new Date(Date.now() + 18 * 30 * 24 * 60 * 60 * 1000), // ~18 months
+        expires_at: new Date(Date.now() + refresh_token_expires_in * 1000), // Use refresh_token_expires_in
       },
     });
   } catch (error) {
-    console.error("Failed to exchange code for tokens:", error);
+    console.error("Failed to exchange code for tokens: ", error);
     throw new Error("Failed to obtain OAuth tokens");
   }
 }
