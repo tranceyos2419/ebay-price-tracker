@@ -1,13 +1,15 @@
 import axios from "axios";
 import { prisma } from "@/lib/prisma";
-import { EbayApiErrorResponse, EbayItemResponse } from "@/types/interfaces";
+import { EbayApiErrorResponse, GetItemResponse } from "@/types/interfaces";
 import { config } from "@/lib/config";
+import { parseStringPromise } from "xml2js";
 
-const ebayApi = axios.create({
-  baseURL: config.API_BASE_URL,
+const tradingApi = axios.create({
+  baseURL: "https://api.ebay.com/ws/api.dll",
   headers: {
-    "X-EBAY-C-MARKETPLACE-ID": "EBAY_US",
-    Accept: "application/json",
+    "X-EBAY-API-COMPATIBILITY-LEVEL": "1399",
+    "X-EBAY-API-SITEID": "0",
+    "Content-Type": "text/xml",
   },
 });
 
@@ -102,25 +104,75 @@ export async function fetchEbayItemData(itemId: string): Promise<{
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
       const token = await getOAuthToken();
-      const response = await ebayApi.get<EbayItemResponse>(
-        `/item/v1|${itemId}|0`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          timeout: 5000,
-        },
-      );
 
-      const item = response.data;
+      const xmlRequest = `
+        <?xml version="1.0" encoding="utf-8"?>
+        <GetItemRequest xmlns="urn:ebay:apis:eBLBaseComponents">
+          <RequesterCredentials>
+            <eBayAuthToken>${token}</eBayAuthToken>
+          </RequesterCredentials>
+          <ItemID>${itemId}</ItemID>
+        </GetItemRequest>
+      `;
+
+      const response = await tradingApi.post("", xmlRequest, {
+        headers: {
+          "X-EBAY-API-CALL-NAME": "GetItem",
+          Authorization: `Bearer ${token}`,
+        },
+        timeout: 5000,
+      });
+
+      const parsedResponse = (await parseStringPromise(
+        response.data,
+      )) as GetItemResponse;
+
+      const item = parsedResponse.GetItemResponse?.Item?.[0];
+      if (!item) {
+        throw new Error("Item not found or access denied");
+      }
+
+      const listingDetails = item.ListingDetails?.[0];
+      const minimumBestOffer = listingDetails?.MinimumBestOfferPrice?.[0]
+        ? parseFloat(listingDetails.MinimumBestOfferPrice[0]._)
+        : undefined;
+      const convertedBuyItNowPrice = listingDetails?.ConvertedBuyItNowPrice?.[0]
+        ? parseFloat(listingDetails.ConvertedBuyItNowPrice[0]._)
+        : NaN;
+      const convertedStartPrice = listingDetails?.ConvertedStartPrice?.[0]
+        ? parseFloat(listingDetails.ConvertedStartPrice[0]._)
+        : NaN;
+      const buyItNowPrice = listingDetails?.BuyItNowPrice?.[0]
+        ? parseFloat(listingDetails.BuyItNowPrice[0]._)
+        : NaN;
+      const startPrice = item.StartPrice?.[0]
+        ? parseFloat(item.StartPrice[0]._)
+        : NaN;
+
+      // Prioritize converted prices, then original prices, default to 0
+      const price =
+        !isNaN(convertedBuyItNowPrice) && convertedBuyItNowPrice > 0
+          ? convertedBuyItNowPrice
+          : !isNaN(convertedStartPrice) && convertedStartPrice > 0
+            ? convertedStartPrice
+            : !isNaN(buyItNowPrice) && buyItNowPrice > 0
+              ? buyItNowPrice
+              : !isNaN(startPrice) && startPrice > 0
+                ? startPrice
+                : 0;
+
+      const title = item.Title?.[0] || "Untitled";
+      const imageUrl = item.PictureDetails?.[0]?.PictureURL?.[0] || "";
+      const storeName = item.Seller?.[0]?.UserID?.[0];
+
       return {
         success: true,
         data: {
-          price: parseFloat(item.price.value),
-          minimum_best_offer: item.minimum_best_offer,
-          image_url: item.image.imageUrl,
-          title: item.title,
-          store_name: item.seller.store_name || item.seller.username,
+          price,
+          minimum_best_offer: minimumBestOffer,
+          image_url: imageUrl,
+          title,
+          store_name: storeName,
         },
       };
     } catch (error) {

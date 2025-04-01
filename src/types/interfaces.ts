@@ -106,3 +106,51 @@ export interface Config {
   TOKEN_URL: string;
   API_BASE_URL: string;
 }
+
+export interface ListingDetails {
+  MinimumBestOfferPrice?: Array<{
+    _: string;
+    $?: { currencyID?: string };
+  }>;
+  ConvertedBuyItNowPrice?: Array<{
+    _: string;
+    $?: { currencyID?: string };
+  }>;
+  ConvertedStartPrice?: Array<{
+    _: string;
+    $?: { currencyID?: string };
+  }>;
+  BuyItNowPrice?: Array<{
+    _: string;
+    $?: { currencyID?: string };
+  }>;
+}
+
+export interface PictureDetails {
+  PictureURL?: string[];
+}
+
+export interface Item {
+  Title?: string[];
+  ListingDetails?: ListingDetails[];
+  PictureDetails?: PictureDetails[];
+  Seller?: {
+    UserID?: string[];
+    SellerInfo?: {
+      StoreURL?: string[];
+    }[];
+  }[];
+  BestOfferDetails?: {
+    BestOfferEnabled?: string[];
+  }[];
+  StartPrice?: Array<{
+    _: string;
+    $?: { currencyID?: string };
+  }>;
+}
+
+export interface GetItemResponse {
+  GetItemResponse?: {
+    Item?: Item[];
+  };
+}
